@@ -1,0 +1,132 @@
+x ∈ MENGE VEREINFACHEN
+rw [Set.mem_setOf_eq]:
+man hat: x ∈ { p | f p }
+daraus wird: f x
+
+
+ECKIGE KLAMMERN:
+\langle, \rangle
+
+
+∃ ANNAHME SPLITTEN:
+obtain ⟨q, hq⟩ := x_in_q
+macht von:
+x_in_q : ∃ q, ↑q = x
+zu:
+q : ℚ
+hq : ↑q = x
+
+
+KOMPLEXE ZAHLEN VERGLEICHEN
+rw [Complex.ext_iff]
+z = w iff z.re = w.re and z.im = w.im
+
+
+FÜR ALLE ANNAHME ABSCHWÄCHEN
+specialize h specific
+Die für alle-Aussage wird zu: es gilt für specific
+
+
+EXISTENZ-AUSSAGE IM ZIEL VERWENDEN
+obtain ⟨t, hxt⟩ := h1
+man hat in h1 eine existenz-aussage, dass ein t existiert.
+h1 : ∃ t, x = p1 + ↑t * (p2 - p1) 
+daraus wird:
+t : ℝ
+hxt : x = p1 + ↑t * (p2 - p1)
+
+
+KOMPLEXE ZAHL HAT IM 0
+exact Complex.ofReal_im r
+(r : ℝ) : (↑r).im = 0
+
+
+MULTIPLIKATION INVERSE
+rw [mul_inv_cancel hq]
+hq ist die Annahme, dass es nicht 0 ist
+
+
+VON a - b = 0 zu a = b
+apply eq_of_sub_eq_zero at h
+
+
+VON x ≠ x zu False:
+exact h rfl
+
+
+WENN ETWAS EINGEBETTET WIRD:
+exact_mod_cast h 
+statt exact h
+
+
+KOMPLEXE ZAHLEN: REALTEIL, IMAGINÄRTEIL:
+simp [Complex.ext_iff]
+macht von ↑d = -↑n * Complex.I
+d = 0 ∧ n = 0
+
+ZAUBERWORT, UM RECHNUNGEN ZU LÖSEN:
+ring
+
+
+a*a = a^2
+rw [pow_two]
+
+
+PROBLEM MIT PFEIL NACH OBEN:
+wenn man eine Aussage beweist, aber der pfeil nicht aufscheint:
+have h1 : 0 ≤ (↑d : ℝ) * ↑d
+ANSTATT have h1 : 0 ≤ ↑d * ↑d
+
+
+AUSSAGE ÜBER KOMPLEXE ZAHL: z=5 AUFSPALTEN IN IM UND RE
+have eq2 := congr_arg Complex.im h
+
+
+VON -a*b zu -(a*b)
+rw [neg_mul_eq_mul_neg]
+
+
+a^2+b^2 = 0 -> a = 0
+have h_re_zero : z.re * z.re = 0 := by {
+  have non_neg_re := mul_self_nonneg z.re
+  have non_neg_im := mul_self_nonneg z.im
+  linarith [h_case1, non_neg_re, non_neg_im]
+}
+have h_im_zero : z.im * z.im = 0 := by {
+  have := le_add_of_nonneg_of_le (mul_self_nonneg z.im) (mul_self_nonneg z.re)
+  linarith
+}
+
+
+
+have h_tmp1 : 0 <= z1.re^2 := by apply pow_two_nonneg
+have h_tmp2 : 0 <= z1.im^2 := by apply pow_two_nonneg
+linarith
+
+
+
+sqrt(x) = 0 -> x = 0
+rw [Real.sqrt_eq_zero]
+
+
+a * b = 0 → a = 0 ∨ b = 0
+apply eq_zero_or_eq_zero_of_mul_eq_zero
+
+
+
+PFEIL NACH OBEN ENTFERNEN:
+norm_cast
+
+
+Complex conjugation mit Mathlib heißt "starring"
+have h_conj : (starRingEnd ℂ) z = z.re - z.im*Complex.I := by {
+  rw [Complex.ext_iff]
+  rw [Complex.conj_re]
+  simp
+}
+
+
+h8 : z.re ^ 2 ≥ 0
+h9 : z.im ^ 2 ≥ 0
+⊢ 4 * z.re ^ 2 * z.im ^ 2 ≥ 0
+apply mul_nonne
