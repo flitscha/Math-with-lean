@@ -1,4 +1,4 @@
-import Math.Algebra.Einleitung.definitions
+import Math.Algebra.C1_Introduction.definitions
 import Mathlib.Data.Rat.Defs
 import Mathlib.Data.Rat.Init
 import Mathlib.Data.Real.Sqrt
