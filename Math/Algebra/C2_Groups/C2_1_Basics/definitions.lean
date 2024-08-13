@@ -21,11 +21,3 @@ structure Subgroup (G : Type u) [MyGroup G] where
   nonempty : carrier ≠ ∅
   mul_mem : ∀ a b : G, (a ∈ carrier ∧ b ∈ carrier) → MyGroup.mul a b ∈ carrier
   inv_mem : ∀ {a : G}, a ∈ carrier → MyGroup.inv a ∈ carrier
-
-
-#check { a : ℤ | a = 3 }
-
-def n : ℕ := 5  -- Beispielwert für n, du kannst ihn anpassen
-
-def nZ : Set ℤ := { x | ∃ z : ℤ, x = n*z }
--- Definiere die Menge der Vielfachen von n
