@@ -62,12 +62,68 @@ theorem nat_minimum_lemma2 (S : Set ℕ) (h_nonempty : S ≠ ∅) :
     case succ n' h_n =>
       by_cases h_case : S ∩ {k | k ≤ n'} ≠ ∅
       case pos =>
-        intro h
+        intro
         exact h_n h_case
       case neg =>
         intro h
         have h_n1 : n'+1 ∈ S := by {
-          sorry
+          simp at h_case
+          -- simplifying it with de-morgan
+          have h_simp : S ∩ {k | k ≤ n' + 1} = (S ∩ {k | k ≤ n'}) ∪ (S ∩ {n' + 1}) := by {
+            -- ->
+            ext y
+            simp
+            constructor
+            intro h_y
+            obtain ⟨h_y1, h_y2⟩ := h_y
+            by_cases h_case2 : y = n'+1
+            case pos =>
+              right
+              constructor
+              exact h_y1
+              exact h_case2
+            case neg =>
+              left
+              constructor
+              exact h_y1
+              cases h_y2
+              case refl =>
+                contrapose! h_case2
+                rfl
+              case step h_step =>
+                exact h_step
+            -- <-
+            intro h_y
+            cases h_y
+            case inl h_y =>
+              obtain ⟨h_y1, h_y2⟩ := h_y
+              constructor
+              exact h_y1
+              apply Nat.le_add_one_iff.mpr
+              left
+              exact h_y2
+            case inr h_y =>
+              obtain ⟨h_y1, h_y2⟩ := h_y
+              constructor
+              exact h_y1
+              rw [h_y2]
+          }
+
+          rw [←Set.nonempty_iff_ne_empty] at h
+          cases h with
+          | intro y hy =>
+            rw [h_simp] at hy
+            cases hy
+            case inl h1 =>
+              apply Set.eq_empty_iff_forall_not_mem.mp at h_case
+              specialize h_case y
+              have : False := by exact h_case h1
+              exact False.elim this
+            case inr h2 =>
+              simp at h2
+              obtain ⟨h1, h2⟩ := h2
+              rw [← h2]
+              exact h1
         }
         use n'+1
         constructor
@@ -88,7 +144,28 @@ theorem nat_minimum_lemma2 (S : Set ℕ) (h_nonempty : S ≠ ∅) :
 
   -- idea: we choose a n, such that x ∈ S∩{n=1} ∪ S∩{n=2} ∪ ...
   -- then we use k as the minimum at h2
+  have h_n : ∃ n : ℕ, x ∈ S ∩ {k | k ≤ n } := by {
+    use x
+    simp
+    exact h_x
+  }
+  obtain ⟨n, h_n⟩ := h_n
 
+  specialize h_i n
+  have h : S ∩ {k | k ≤ n} ≠ ∅ := by {
+    intro h_empty
+    apply Set.eq_empty_iff_forall_not_mem.mp at h_empty
+    specialize h_empty x
+    simp at h_n
+    simp at h_empty
+    obtain ⟨h_n1, h_n2⟩ := h_n
+    contrapose! h_empty
+    constructor
+    exact h_n1
+    exact h_n2
+  }
+
+  exact h_i h
 }
 
 
