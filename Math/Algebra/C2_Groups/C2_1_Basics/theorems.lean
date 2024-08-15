@@ -1,4 +1,5 @@
 import Math.Algebra.C2_Groups.C2_1_Basics.definitions
+import Mathlib.Tactic.Ring
 
 ----------------------------------------------------------------
 -- (ℤ, +) is a group
@@ -40,7 +41,7 @@ theorem neutral_element_unique_lemma [MyGroup G] (e e' : G)
 
 --------------------------------------------------------------
 -- Lemma: every nonempty subset of ℕ has a minimum
-theorem nat_minimum_lemma2 (S : Set ℕ) (h_nonempty : S ≠ ∅) :
+theorem nat_minimum_lemma (S : Set ℕ) (h_nonempty : S ≠ ∅) :
 ∃ x ∈ S, ∀ m ∈ S, x <= m := by {
   contrapose! h_nonempty
   apply Set.eq_empty_iff_forall_not_mem.mpr
@@ -141,7 +142,6 @@ theorem nat_minimum_lemma2 (S : Set ℕ) (h_nonempty : S ≠ ∅) :
         rw [Nat.lt_one_add_iff] at h2
         exact h2
   }
-
   -- idea: we choose a n, such that x ∈ S∩{n=1} ∪ S∩{n=2} ∪ ...
   -- then we use k as the minimum at h2
   have h_n : ∃ n : ℕ, x ∈ S ∩ {k | k ≤ n } := by {
@@ -171,12 +171,34 @@ theorem nat_minimum_lemma2 (S : Set ℕ) (h_nonempty : S ≠ ∅) :
 
 --------------------------------------------------------------
 -- Lemma 2.1.5:
+-- every subgroup of ℤ looks like this for a n ∈ ℤ: {n*z | z ∈ Z}
 theorem lemma_2_1_5 (H : Subgroup ℤ) :
 ∃ n : ℤ, H.carrier = { x : ℤ | ∃ z : ℤ, x = n*z } := by {
   -- first we prove, that 0 ∈ H.carrier
   have h_0 : 0 ∈ H.carrier := by {
-    sorry
-    --apply MyGroup.one
+    -- H is a subgroup -> H ≠ ∅
+    have h_nonempty : H.carrier ≠ ∅ := by {
+      apply Subgroup.nonempty
+    }
+    -- this means, there is an element in H
+    have h_a : ∃ a : ℤ, a ∈ H.carrier := by {
+      contrapose! h_nonempty
+      apply Set.eq_empty_iff_forall_not_mem.mpr
+      exact h_nonempty
+    }
+    obtain ⟨a, h_a⟩ := h_a
+    -- -a is also in H
+    have a_inv : MyGroup.inv a ∈ H.carrier := by {
+      apply Subgroup.inv_mem
+      exact h_a
+    }
+    -- 0 = a + -a
+    have h_0 : 0 = a + -a := by simp
+    rw [h_0]
+    apply Subgroup.mul_mem
+    constructor
+    exact h_a
+    apply a_inv
   }
 
   by_cases h_case : H.carrier = {0}
@@ -190,60 +212,203 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
     -- we prove, that there exists a element, with minimal absolute value
     have h_min : ∃ m ∈ H.carrier, m ≠ 0 ∧
                 ∀ m' ∈ H.carrier, m' ≠ 0 -> |m| <= |m'| := by {
-      have h_nonempty : ∃ x, x ∈ H.carrier ∧ x ≠ 0 := by sorry
-      obtain ⟨x, hm, hm_nz⟩ := h_nonempty
-      let S := {x : ℕ | ∃ k ∈ H.carrier, x = |k| ∧ k ≠ 0}
-      have hS_nonempty : S ≠ ∅ := by sorry
-      obtain ⟨n, ⟨k, hk, hk_eq, hk_ne⟩, h_smallest⟩ :=
-
-
-      contrapose! h_case
-      ext x
-      constructor
-      simp
-      contrapose! h_case
-
-
-
-
-
-
-      use 0
-      constructor
-      apply h_0
-      contrapose! h_case
-      ext x
-      constructor
-      intro h_x
-      simp
-
-      specialize h_case x
-      have h : ∃ m' ∈ H.carrier, x ≠ m' ∧ |m'| ≤ |x| := by {
-        apply h_case
-        exact h_x
+      -- H has at least 2 elements, because 0 ∈ H, but H ≠ {0}
+      have h_nonempty : ∃ x, x ∈ H.carrier ∧ x ≠ 0 := by {
+        contrapose! h_case
+        ext x
+        constructor
+        -- ->
+        intro h_x
+        simp
+        specialize h_case x
+        exact h_case h_x
+        -- <-
+        intro h_x
+        simp at h_x
+        rw [h_x]
+        exact h_0
       }
-      clear h_case
-      obtain ⟨m', h1, h2, h3⟩ := h
 
+      -- we want the minimal absolute value of H. We do that with this subset of ℕ
+      set M := { x : ℕ | ∃ n ∈ H.carrier, n ≠ 0 ∧ x = |n| } with h_M
+      have h_M_min : ∃ x ∈ M, ∀ m ∈ M, x <= m := by {
+        apply nat_minimum_lemma
+        contrapose! h_nonempty
+        apply Set.eq_empty_iff_forall_not_mem.mp at h_nonempty
+        simp at h_nonempty
+        intro x
+        intro h_x
+        specialize h_nonempty (x.natAbs)
+        rw [h_M] at h_nonempty
+        simp at h_nonempty
+        specialize h_nonempty x
+        have h_tmp : (¬x = 0 → ¬|x| = |x|) := by exact h_nonempty h_x
+        by_cases h_case1 : x = 0
+        case pos =>
+          exact h_case1
+        case neg =>
+          have h1 : ¬|x| = |x| := by exact h_tmp h_case1
+          simp at h1
+      }
 
-
-
-      --obtain ⟨m, h_case⟩ := h_case
-      have h_pos : ∃ m ∈ H.carrier, m > 0 := by sorry
-      obtain ⟨m, hmH, hm_pos⟩ := h_pos
-      have hm_min : ∀ m' ∈ H.carrier, 0 < m' → m ≤ m' := by sorry
-
-      use m
+      -- now we can use this minimum
+      obtain ⟨x, h_x_M, h_x_min⟩ := h_M_min
+      rw [h_M] at h_x_M
+      simp at h_x_M
+      obtain ⟨n, h_n_H, h_n_0, h_n_x⟩ := h_x_M
+      use n
       constructor
-      exact hmH
-      intros m' hm'H hm_neq
-      have : |m| ≤ |m'| := by sorry
-      apply lt_of_le_of_ne
-      exact this
-
-      rw [abs_of_nonneg]
+      exact h_n_H
+      constructor
+      apply h_n_0
+      intro m'
+      intro h_m'
+      intro h_m0
+      rw [← h_n_x]
+      have h_m_M : m'.natAbs ∈ M := by {
+        rw [h_M]
+        simp
+        use m'
+      }
+      specialize h_x_min m'.natAbs
+      have : x ≤ m'.natAbs := by exact h_x_min h_m_M
+      have h_mm : |m'| = m'.natAbs := by simp
+      rw [h_mm]
+      norm_cast
     }
 
-    case neg =>
-      sorry
+    -- we use the minimum
+    obtain ⟨n, h_min⟩ := h_min
+    use n
+    ext x
+    constructor
+    -- H ⊆ n*ℤ
+    intro h_x
+    simp
+    have h1 : ∃ a b : ℤ, |b| < |n| ∧ x = n*a + b := by {
+      obtain ⟨_, h_tmp2, _⟩ := h_min
+      use (x / n : ℤ)
+      use x % n
+      constructor
+      rw [abs_of_nonneg]
+      apply Int.emod_lt
+      exact h_tmp2
+      apply Int.emod_nonneg
+      exact h_tmp2
+      rw [Int.ediv_add_emod]
+    }
+    obtain ⟨a, b, h1, h2⟩ := h1
+
+    have h3 : b ∈ H.carrier := by {
+      have h_tmp : b = x - n*a := by {
+        rw [h2]
+        simp
+      }
+      rw [h_tmp]
+      rw [sub_eq_add_neg]
+      apply Subgroup.mul_mem
+      constructor
+      exact h_x
+      clear h2
+      clear h_tmp
+      obtain ⟨h, _⟩ := h_min
+      induction a
+      case a.right.intro.ofNat a =>
+        rw [Int.ofNat_eq_coe]
+        induction a
+        case zero =>
+          simp
+          exact h_0
+        case succ a' h_a =>
+          have : -(n * ↑(a' + 1)) = -(n * ↑a') + -n := by {
+            simp
+            ring
+          }
+          rw [this]
+          apply Subgroup.mul_mem
+          constructor
+          exact h_a
+          apply Subgroup.inv_mem
+          exact h
+      case a.right.intro.negSucc a =>
+        rw [Int.negSucc_coe]
+        induction a
+        case zero =>
+          simp
+          exact h
+        case succ a' h_a =>
+          have : -(n * -↑(a' + 1 + 1)) = -(n * -↑(a' + 1)) + n := by {
+            simp
+            ring
+          }
+          rw [this]
+          apply Subgroup.mul_mem
+          constructor
+          exact h_a
+          exact h
+    }
+
+    have h4 : b = 0 := by {
+      contrapose! h1
+      obtain ⟨_, _, h_tmp3⟩ := h_min
+      specialize h_tmp3 b
+      have h_tmp4 : b ≠ 0 → |n| ≤ |b| := by exact h_tmp3 h3
+      exact h_tmp4 h1
+    }
+
+    have h5 : x = n*a := by {
+      rw [h4] at h2
+      simp at h2
+      exact h2
+    }
+
+    use a
+
+    -- n*ℤ ⊆ H
+    intro h_x
+    simp at h_x
+    obtain ⟨h_nH, _⟩ := h_min
+    obtain ⟨z, h_x⟩ := h_x
+    induction z
+    case ofNat z =>
+      simp at h_x
+      rw [h_x]
+      clear h_x
+      induction z
+      case zero =>
+        simp
+        exact h_0
+      case succ z' h_z =>
+        have h_tmp : n * ↑(z' + 1) = n * ↑z' + n := by {
+          nth_rewrite 3 [← Int.mul_one n]
+          rw [← Int.mul_add]
+          simp
+        }
+        rw [h_tmp]
+        apply Subgroup.mul_mem
+        constructor
+        exact h_z
+        exact h_nH
+    case negSucc z =>
+      rw [h_x]
+      clear h_x
+      induction z
+      case zero =>
+        simp
+        apply Subgroup.inv_mem
+        exact h_nH
+      case succ z' h_z =>
+        rw [Int.negSucc_coe] at h_z
+        rw [Int.negSucc_coe]
+        have h_tmp : n * -↑(z' + 1 + 1) = n * -↑(z' + 1) - n := by {
+          simp
+          ring
+        }
+        rw [h_tmp]
+        rw [Int.sub_eq_add_neg]
+        apply Subgroup.mul_mem
+        constructor
+        exact h_z
+        apply Subgroup.inv_mem
+        exact h_nH
 }
