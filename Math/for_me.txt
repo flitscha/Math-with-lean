@@ -148,3 +148,8 @@ Nat.lt_of_le_of_ne {n m : ℕ} (h₁ : n ≤ m) (h₂ : ¬n = m) : n < m
 
 False -> Aussage
 exact False.elim h
+
+
+let x = ...
+simp [x] 
+ersetzt es dann

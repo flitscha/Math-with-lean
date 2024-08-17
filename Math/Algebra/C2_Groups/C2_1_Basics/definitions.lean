@@ -108,45 +108,64 @@ def SubgroupToGroup {G : Type u} [MyGroup G] (H : Subgroup G) : MyGroup H.carrie
 }
 
 class GroupHomomorphism (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGroup G2] :=
-  φ : G1 -> G2
-  mul : ∀ a b : G1, φ (MyGroup.mul a b) = MyGroup.mul (φ a) (φ b)
+  f : G1 -> G2
+  mul : ∀ a b : G1, f (MyGroup.mul a b) = MyGroup.mul (f a) (f b)
 
 structure GroupIsomorphism (G1 : Type u) (G2 : Type v) [MyGroup G1]
 [MyGroup G2] extends GroupHomomorphism G1 G2 :=
-  injective : Function.Injective φ
-  surjective : Function.Surjective φ
+  (injective : Function.Injective f)
+  (surjective : Function.Surjective f)
 
-structure idGroupMorphism (G : Type u) [MyGroup G] where
-  φ : G -> G
-  identity : ∀ a : G, φ a = a
+-- proof, that a group isomorphism is a group homomorphism
+def isomorphismToHomomorphism {G1 : Type u} {G2 : Type v}
+[MyGroup G1] [MyGroup G2] (ψ : GroupIsomorphism G1 G2) : GroupHomomorphism G1 G2 := {
+  f := ψ.f
+  mul := ψ.mul
+}
 
--- proof, that the identity morphism is a homomorphism
-def idMorphismToHomomorphism (G : Type u) [MyGroup G]
-(ψ : idGroupMorphism G) : GroupHomomorphism G G := {
-  φ := ψ.φ
+instance coeIsomorphismToHomomorphism {G1 : Type u} {G2 : Type v}
+[MyGroup G1] [MyGroup G2] :
+Coe (GroupIsomorphism G1 G2) (GroupHomomorphism G1 G2) := {
+  coe := isomorphismToHomomorphism
+}
+
+
+/-
+--def idGroupMorphism (G : Type u) [MyGroup G] : G → G := id
+
+structure idGroupMorphism (G : Type u) [MyGroup G] extends GroupHomomorphism G G :=
+  identity : f = id
+
+def idToHomomorphism (G : Type u) [MyGroup G] : GroupHomomorphism G G := {
+  f := id
   mul := by {
     intros a b
-    have h : ψ.φ (MyGroup.mul a b) = MyGroup.mul (ψ.φ a) (ψ.φ b) := by {
-      repeat rw [ψ.identity]
+    have h : id (MyGroup.mul a b) = MyGroup.mul (id a) (id b) := by {
+      simp
     }
     apply h
   }
 }
 
--- proof, that a group isomorphism is a group homomorphism
-def isomorphismToHomomorphism (G1 : Type u) (G2 : Type v)
-[MyGroup G1] [MyGroup G2] (ψ : GroupIsomorphism G1 G2) : GroupHomomorphism G1 G2 := {
-  φ := ψ.φ
-  mul := ψ.mul
-}
+/-
+-- proof, that the identity morphism is a homomorphism
+def idToHomomorphism {G : Type u} [MyGroup G]
+(ψ : idGroupMorphism G) : GroupHomomorphism G G := {
+  f := ψ.f
+  mul := by {
+    intros a b
+    have h : ψ.f (MyGroup.mul a b) = MyGroup.mul (ψ.f a) (ψ.f b) := by {
+      repeat rw [ψ.identity]
+    }
+    apply h
+  }
+}-/
 
-structure InverseGroupHomomorphism (G1 G2 : Type u) [MyGroup G1] [MyGroup G2] where
-  φ : G1 → G2
-  ψ : G2 → G1
-  -- φ ist ein Gruppenhomomorphismus
-  homomorphism : ∀ a b : G1, φ (MyGroup.mul a b) = MyGroup.mul (φ a) (φ b)
-  -- ψ ist ein Gruppenhomomorphismus
-  inverseHomomorphism : ∀ a b : G2, ψ (MyGroup.mul a b) = MyGroup.mul (ψ a) (ψ b)
-  -- φ und ψ sind Umkehrabbildungen zueinander
-  φψ : ∀ a : G1, ψ (φ a) = a
-  ψφ : ∀ b : G2, φ (ψ b) = b
+instance coeIdToHomomorphism {G : Type u} [MyGroup G] :
+Coe (idGroupMorphism G) (GroupHomomorphism G G) := {
+  coe := by {
+    intro
+    exact idToHomomorphism G
+  }
+}
+-/
