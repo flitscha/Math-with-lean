@@ -413,35 +413,56 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
         exact h_nH
 }
 
-def G1 : Type u := sorry
-def G2 : Type v := sorry
-instance : MyGroup G1 := sorry
-instance : MyGroup G2 := sorry
-def ψ : GroupHomomorphism G1 G2 := {
-  f := id
-  mul := sorry
+-- Lemma: a bijective funktion has a inverse function
+theorem bijective_has_inverse_lemma {A : Type u} {B : Type v} (f : A → B)
+(h_bij : Function.Bijective f) :
+∃ (f_inv : B → A),
+(∀ x2 : B, f (f_inv x2) = x2) ∧
+(∀ x1 : A, f_inv (f x1) = x1) := by {
+
+  obtain ⟨h_inj, h_surj⟩ := h_bij
+  choose f_inv h_f_inv using h_surj
+  use f_inv
+
+  constructor
+  intro x2
+  exact h_f_inv x2
+
+  intro x1
+  rw [Function.Injective] at h_inj
+  specialize h_f_inv (f x1)
+  specialize h_inj h_f_inv
+  exact h_inj
 }
-def φ : GroupIsomorphism G1 G2 := sorry
-def φf : G1 -> G2 := φ.f
 
-def x : G2 := sorry
-def h_inj : ∀ ⦃x1 x2 : G1⦄, (φ.f : G1 -> G2) x1 = (φ.f : G1 -> G2) x2 → x1 = x2 := φ.injective
-#check φ.f   -- Dies sollte G1 → G2 sein
-#check φ.injective   -- Dies sollte Injektivität von φ.f sein
-#check h_inj
---def a : idGroupMorphism G1 := sorry
---#check a.f
-#check ψ
-#check (φ.f : G1 -> G2)
-#check φ.injective
-#check (φ.f : G1 → G2)
---def a : GroupHomomorphism G2 G2 := idGroupMorphism G2
+-- Lemma: if a function has a inverse, then the function is bijective
+theorem inverse_is_bijective_lemma {A : Type u} {B : Type v} (f : A -> B)
+(h_inv : ∃ (f_inv : B → A),
+(∀ x2 : B, f (f_inv x2) = x2) ∧
+(∀ x1 : A, f_inv (f x1) = x1)) :
+Function.Bijective f := by {
 
+  obtain ⟨f_inv, h_inv⟩ := h_inv
+  obtain ⟨h_left_inv, h_right_inv⟩ := h_inv
+  constructor
+  -- injective
+  intros x1 x2 h_eq
+  have h1 : f_inv (f x1) = x1 := h_right_inv x1
+  have h2 : f_inv (f x2) = x2 := h_right_inv x2
+  rw [← h1, ← h2, h_eq]
+  -- surjective
+  intro x
+  use f_inv x
+  exact h_left_inv x
+}
+
+
+-- group-isomorphisms are invertable
 theorem isomorphism_is_invertable_lemma (G1 : Type u) (G2 : Type v)
 [MyGroup G1] [MyGroup G2] (φ : GroupIsomorphism G1 G2) :
 ∃ ψ : GroupHomomorphism G2 G1,
-∀ x2 : G2, φ.f (ψ.f x2) = x2 ∧
-∀ x1 : G1, ψ.f (φ.f x1) = x1 := by {
+(∀ x2 : G2, φ.f (ψ.f x2) = x2) ∧
+(∀ x1 : G1, ψ.f (φ.f x1) = x1) := by {
 
   let φ_f : G1 -> G2 := φ.f
 
@@ -451,108 +472,55 @@ theorem isomorphism_is_invertable_lemma (G1 : Type u) (G2 : Type v)
   -- Function.Injective (@GroupHomomorphism.f G1 G2 inst✝¹ inst✝ φ.toGroupHomomorphism)
   have h_φ_sur : Function.Surjective φ_f := φ.surjective
 
-  have h_one_to_one : ∀ x2 : G2, ∃! x1 : G1, φ_f x1 = x2 := by {
-    intro x2
-    obtain ⟨x1, hx1⟩ := h_φ_sur x2
-    use x1
-    simp
+  -- define the inverse function
+  have h_inv : ∃ (ψ_f : G2 → G1),
+  (∀ x2 : G2, φ_f (ψ_f x2) = x2) ∧
+  (∀ x1 : G1, ψ_f (φ_f x1) = x1) := by {
+    apply bijective_has_inverse_lemma φ_f
+    rw [Function.Bijective]
     constructor
-    exact hx1
-    intro y1
-    intro h
-    apply h_φ_inj
-    rw [h, hx1]
+    exact h_φ_inj
+    exact h_φ_sur
   }
+  obtain ⟨ψ_f, h_inv⟩ := h_inv
 
-  rw [Function.Injective] at h_φ_inj
-  rw [Function.Surjective] at h_φ_sur
-
-  let ψ_f : G2 -> G1 := λ x2 : G2 =>
-    Classical.choose (h_one_to_one x2)
-    --let ⟨x1, hx1⟩ := h_φ_sur x2 in
-    --x1,
-
-  --let ψ_f : G2 → G1 := λ x2 : G2 => by {
-  --  have : ∃! x1, φ_f x1 = x2 := by {
-  --    apply h_one_to_one
-  --  }
-  --  exact Classical.choose this
-  --}
-
+  -- we show, that the inverse-function is a group-homomorphism
   have ψ_f_is_homomorphism : ∀ x2 y2 : G2, ψ_f (MyGroup.mul x2 y2) = MyGroup.mul (ψ_f x2) (ψ_f y2) := by {
     intros x2 y2
 
-    let ⟨x1, hx1⟩ := h_φ_sur x2
-    let ⟨y1, hy1⟩ := h_φ_sur y2
-    have h_mul : φ_f (ψ_f (MyGroup.mul x2 y2)) = MyGroup.mul (φ_f (ψ_f x2)) (φ_f (ψ_f y2)) := by {
-      have h_inv : ∀ z2 : G2, φ_f (ψ_f z2) = z2 := by {
-        intro z2
-        let ⟨z1, hz1⟩ := h_φ_sur z2
-        simp [φ_f, ψ_f]
-
-
-      }
-      --rw [MyGroup.mul, φ.mul]
-      --exact MyGroup.mul (φ.f (ψ_f x2)) (φ.f (ψ_f y2))
-      sorry
+    have h1 : φ_f (ψ_f (MyGroup.mul x2 y2)) =
+    MyGroup.mul (φ_f (ψ_f x2)) (φ_f (ψ_f y2)) := by {
+      obtain ⟨h_tmp1, _⟩ := h_inv
+      repeat rw [h_tmp1]
     }
 
-    sorry
+    have h2 : MyGroup.mul (φ_f (ψ_f x2)) (φ_f (ψ_f y2)) =
+    φ_f (MyGroup.mul (ψ_f x2) (ψ_f y2)) := by {
+      rw [← φ.mul]
+    }
+
+    rw [h2] at h1
+    apply h_φ_inj at h1
+    exact h1
   }
 
+  -- define the inverse group homomorphism
   let ψ : GroupHomomorphism G2 G1 := {
     f := ψ_f
     mul := ψ_f_is_homomorphism
   }
 
-
-
-
-
+  use ψ
+  apply h_inv
 }
 
-
-
-
-theorem test_lemma (G1 : Type u) (G2 : Type v)
-[MyGroup G1] [MyGroup G2] (φ : GroupIsomorphism G1 G2) :
-∀ ψ : GroupHomomorphism G1 G2, Function.Injective ψ.f := by {
-  have h_inj : Function.Injective (φ.f : G1 → G2) := φ.injective
-  intro ψ
-
-  exact h_inj
-}
-
--- Annahmen
-variables {G1 G2 : Type} (φ_f : G1 → G2)
-
--- Beweis, dass φ_f bijektiv ist
-theorem bijective_has_inverse (h_one_to_one : ∀ (x2 : G2), ∃! x1, φ_f x1 = x2) :
-∃ (φ_f_inv : G2 → G1), (∀ x2 : G2, φ_f (φ_f_inv x2) = x2) ∧ (∀ x1 : G1, φ_f_inv (φ_f x1) = x1) := by {
-
-  let φ_f_inv : G2 → G1 := λ x2 : G2 => Classical.choose (h_one_to_one x2).exists
-  use φ_f_inv
-  constructor
-
-  intro x2
-  have h := Classical.choose_spec (h_one_to_one x2).exists
-  simp [φ_f_inv]
-  exact h
-
-
-  intro x1
-  have h : ∀ (x1 : G1), ∃! x2 : G2, φ_f_inv x2 = x1 := by {
-    sorry
-  }
-  specialize h x1
-  have h2 := Classical.choose_spec (h).exists
-  obtain ⟨x2, h⟩ := h
-  simp at h
-  have h4 := Classical.choose_spec (h_one_to_one x2).exists
-
-  simp [φ_f_inv]
-  obtain ⟨hh, _⟩ := h
-  rw [← h4] at hh
-  rw [← hh]
-
+-- an invertable group-homomorphism is a group-isomorphisms
+theorem invertable_homomorphism_is_isomorphism_lemma (G1 : Type u) (G2 : Type v)
+[MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2)
+(h_inv : ∃ ψ : GroupHomomorphism G2 G1,
+(∀ x2 : G2, φ.f (ψ.f x2) = x2) ∧
+(∀ x1 : G1, ψ.f (φ.f x1) = x1)) : Function.Bijective φ.f := by {
+  obtain ⟨ψ, h_inv⟩ := h_inv
+  apply inverse_is_bijective_lemma
+  use ψ.f
 }
