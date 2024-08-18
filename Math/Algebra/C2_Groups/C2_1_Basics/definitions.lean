@@ -169,3 +169,7 @@ Coe (idGroupMorphism G) (GroupHomomorphism G G) := {
   }
 }
 -/
+
+-- two groups are called isomorphic, iff there exists a group-isomorphism between the two groups
+def groupsAreIsomorphic (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGroup G2] : Prop :=
+  ∃ _ : GroupIsomorphism G1 G2, true

@@ -413,6 +413,32 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
         exact h_nH
 }
 
+
+-- in groups, we can do this: a = b ↔ a+x = b+x
+theorem group_cancel_rule_lemma (G : Type u) [MyGroup G] (a b x : G) :
+a = b ↔ MyGroup.mul a x = MyGroup.mul b x := by {
+  -- ->
+  have h1 : a = b -> MyGroup.mul a x = MyGroup.mul b x := by {
+    intro h
+    rw [h]
+  }
+  constructor
+  exact h1
+  -- <-
+  intro h
+  -- use the inverse of x
+  have h2 : MyGroup.mul (MyGroup.mul a x) (MyGroup.inv x) =
+            MyGroup.mul (MyGroup.mul b x) (MyGroup.inv x) := by {
+    rw [h]
+  }
+
+  repeat rw [MyGroup.mul_assoc] at h2
+  repeat rw [MyGroup.mul_inv] at h2
+  repeat rw [MyGroup.mul_one] at h2
+  exact h2
+}
+
+
 -- Lemma: a bijective funktion has a inverse function
 theorem bijective_has_inverse_lemma {A : Type u} {B : Type v} (f : A → B)
 (h_bij : Function.Bijective f) :
@@ -523,4 +549,64 @@ theorem invertable_homomorphism_is_isomorphism_lemma (G1 : Type u) (G2 : Type v)
   obtain ⟨ψ, h_inv⟩ := h_inv
   apply inverse_is_bijective_lemma
   use ψ.f
+}
+
+/-
+def G1 : Type u := sorry
+def G2 : Type v := sorry
+instance : MyGroup G1 := sorry
+instance : MyGroup G2 := sorry
+def e1 : G1 := sorry
+def h_e1 : e1 = MyGroup.one := sorry
+def φ : GroupHomomorphism G1 G2 := sorry
+#check MyGroup.one
+-/
+
+-- group homomorphisms map the neutral element of G1 to the neutral element of G2
+theorem homomorphism_neutral_element_lemma (G1 : Type u) (G2 : Type v)
+[MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) (e1 : G1) (e2 : G2)
+(h_e1 : e1 = MyGroup.one) (h_e2 : e2 = MyGroup.one) : φ.f e1 = e2 := by {
+
+  have h : φ.f e1 = MyGroup.mul (φ.f e1) (φ.f e1) := by {
+    have h1 : MyGroup.mul e1 e1 = e1 := by {
+      rw [h_e1, MyGroup.mul_one]
+    }
+    nth_rewrite 1 [← h1]
+    rw [GroupHomomorphism.mul]
+  }
+
+  have h1 : MyGroup.mul (φ.f e1) (MyGroup.inv (φ.f e1)) =
+            MyGroup.mul (MyGroup.mul (φ.f e1) (φ.f e1)) (MyGroup.inv (φ.f e1)) := by {
+    rw [←group_cancel_rule_lemma]
+    exact h
+  }
+  rw [MyGroup.mul_assoc] at h1
+  repeat rw [MyGroup.mul_inv] at h1
+  rw [MyGroup.mul_one] at h1
+  rw [← h1]
+  symm
+  exact h_e2
+}
+
+-- group homomorphisms map the inverse element to the inverse element
+theorem homomorphism_inverse_element_lemma (G1 : Type u) (G2 : Type v)
+[MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
+∀ x1 : G1, φ.f (MyGroup.inv x1) = MyGroup.inv (φ.f x1) := by {
+  intro x1
+  have h : φ.f (MyGroup.mul (MyGroup.inv x1) x1) = MyGroup.one := by {
+    rw [MyGroup.inv_mul]
+    apply homomorphism_neutral_element_lemma
+    rfl
+    rfl
+  }
+  rw [GroupHomomorphism.mul] at h
+
+  have h2 : MyGroup.mul (MyGroup.mul (φ.f (MyGroup.inv x1)) (φ.f x1)) (MyGroup.inv (φ.f x1)) =
+            MyGroup.mul MyGroup.one (MyGroup.inv (φ.f x1)) := by {
+    rw [← group_cancel_rule_lemma]
+    exact h
+  }
+  rw [MyGroup.mul_assoc] at h2
+  rw [MyGroup.mul_inv, MyGroup.one_mul, MyGroup.mul_one] at h2
+  rw [h2]
 }
