@@ -39,6 +39,27 @@ theorem neutral_element_unique_lemma [MyGroup G] (e e' : G)
   exact h2
 }
 
+
+----------------------------------------------------------------
+-- (a⁻¹)⁻¹ = a
+theorem double_inv_lemma [MyGroup G] (a : G) :
+MyGroup.inv (MyGroup.inv a) = a := by {
+  have h : MyGroup.mul (MyGroup.inv a) (MyGroup.inv (MyGroup.inv a)) = MyGroup.one := by {
+    apply MyGroup.mul_inv
+  }
+
+  have h2 : a = MyGroup.mul a MyGroup.one := by {
+    symm
+    apply MyGroup.mul_one
+  }
+
+  nth_rewrite 2 [h2]
+  rw [← h]
+  rw [← MyGroup.mul_assoc]
+  rw [MyGroup.mul_inv]
+  rw [MyGroup.one_mul]
+}
+
 --------------------------------------------------------------
 -- Lemma: every nonempty subset of ℕ has a minimum
 theorem nat_minimum_lemma (S : Set ℕ) (h_nonempty : S ≠ ∅) :
@@ -414,6 +435,83 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
 }
 
 
+--------------------------------------------------------------
+-- let G be a group, H ⊆ G. H is a subgroup iff H is not empty, and
+-- ∀ h1, h2 ∈ H, h1⁻¹*h2 ∈ H
+theorem subgroup_iff_lemma (G : Type u) [MyGroup G] (H : Set G) :
+(∃ K : Subgroup G, K.carrier = H) ↔ (H ≠ ∅ ∧
+∀ a b : G, (a ∈ H ∧ b ∈ H) -> MyGroup.mul (MyGroup.inv a) b ∈ H) := by {
+  -- ->
+  constructor
+  intro h_subgroup
+  obtain ⟨K, h_subgroup⟩ := h_subgroup
+  rw [← h_subgroup]
+  constructor
+  apply K.nonempty
+  intros a b
+  intro h_h
+  obtain ⟨h_a, h_b⟩ := h_h
+  have h_inv : (MyGroup.inv a ∈ K.carrier) := by {
+    apply K.inv_mem
+    exact h_a
+  }
+  apply K.mul_mem
+  constructor
+  exact h_inv
+  exact h_b
+
+  -- <-
+  intro h
+  obtain ⟨h1, h2⟩ := h
+  have h_e : MyGroup.one ∈ H := by {
+    have : ∃ a : G, a ∈ H := by {
+      contrapose! h1
+      rw [Set.eq_empty_iff_forall_not_mem]
+      exact h1
+    }
+    obtain ⟨a, h_a_mem⟩ := this
+    specialize h2 a a
+    have : MyGroup.mul (MyGroup.inv a) a ∈ H := by {
+      apply h2
+      simp [h_a_mem]
+    }
+    rw [MyGroup.inv_mul] at this
+    exact this
+  }
+
+  have h_inv : (∀ {a : G}, a ∈ H → MyGroup.inv a ∈ H) := by {
+    intro a
+    intro h_a
+    have : MyGroup.mul (MyGroup.inv a) MyGroup.one ∈ H := by {
+      specialize h2 a MyGroup.one
+      simp [h_a, h_e] at h2
+      exact h2
+    }
+    rw [MyGroup.mul_one] at this
+    exact this
+  }
+
+  have h_mul : (∀ a b : G, (a ∈ H ∧ b ∈ H) → MyGroup.mul a b ∈ H) := by {
+    intros a b
+    intro h_mem
+    specialize h2 (MyGroup.inv a) b
+    simp [h_mem, h_inv] at h2
+    rw [double_inv_lemma] at h2
+    exact h2
+  }
+
+  let K : Subgroup G := {
+    carrier := H
+    nonempty := h1
+    mul_mem := h_mul
+    inv_mem := h_inv
+  }
+
+  use K
+}
+
+
+--------------------------------------------------------------
 -- in groups, we can do this: a = b ↔ a+x = b+x
 theorem group_cancel_rule_lemma (G : Type u) [MyGroup G] (a b x : G) :
 a = b ↔ MyGroup.mul a x = MyGroup.mul b x := by {
@@ -439,6 +537,7 @@ a = b ↔ MyGroup.mul a x = MyGroup.mul b x := by {
 }
 
 
+---------------------------------------------------------------
 -- Lemma: a bijective funktion has a inverse function
 theorem bijective_has_inverse_lemma {A : Type u} {B : Type v} (f : A → B)
 (h_bij : Function.Bijective f) :
@@ -461,6 +560,8 @@ theorem bijective_has_inverse_lemma {A : Type u} {B : Type v} (f : A → B)
   exact h_inj
 }
 
+
+----------------------------------------------------------------
 -- Lemma: if a function has a inverse, then the function is bijective
 theorem inverse_is_bijective_lemma {A : Type u} {B : Type v} (f : A -> B)
 (h_inv : ∃ (f_inv : B → A),
@@ -483,6 +584,7 @@ Function.Bijective f := by {
 }
 
 
+-----------------------------------------------------------------
 -- group-isomorphisms are invertable
 theorem isomorphism_is_invertable_lemma (G1 : Type u) (G2 : Type v)
 [MyGroup G1] [MyGroup G2] (φ : GroupIsomorphism G1 G2) :
@@ -540,6 +642,8 @@ theorem isomorphism_is_invertable_lemma (G1 : Type u) (G2 : Type v)
   apply h_inv
 }
 
+
+------------------------------------------------------------------
 -- an invertable group-homomorphism is a group-isomorphisms
 theorem invertable_homomorphism_is_isomorphism_lemma (G1 : Type u) (G2 : Type v)
 [MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2)
@@ -562,6 +666,7 @@ def φ : GroupHomomorphism G1 G2 := sorry
 #check MyGroup.one
 -/
 
+-------------------------------------------------------------------
 -- group homomorphisms map the neutral element of G1 to the neutral element of G2
 theorem homomorphism_neutral_element_lemma (G1 : Type u) (G2 : Type v)
 [MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) (e1 : G1) (e2 : G2)
@@ -588,6 +693,8 @@ theorem homomorphism_neutral_element_lemma (G1 : Type u) (G2 : Type v)
   exact h_e2
 }
 
+
+------------------------------------------------------------------
 -- group homomorphisms map the inverse element to the inverse element
 theorem homomorphism_inverse_element_lemma (G1 : Type u) (G2 : Type v)
 [MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
