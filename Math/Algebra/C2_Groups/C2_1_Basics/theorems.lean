@@ -40,6 +40,72 @@ theorem neutral_element_unique_lemma [MyGroup G] (e e' : G)
 }
 
 
+--------------------------------------------------------------
+-- in groups, we can do this: a = b ↔ a+x = b+x
+theorem group_cancel_rule_right_lemma (G : Type u) [MyGroup G] (a b x : G) :
+a = b ↔ MyGroup.mul a x = MyGroup.mul b x := by {
+  -- ->
+  have h1 : a = b -> MyGroup.mul a x = MyGroup.mul b x := by {
+    intro h
+    rw [h]
+  }
+  constructor
+  exact h1
+  -- <-
+  intro h
+  -- use the inverse of x
+  have h2 : MyGroup.mul (MyGroup.mul a x) (MyGroup.inv x) =
+            MyGroup.mul (MyGroup.mul b x) (MyGroup.inv x) := by {
+    rw [h]
+  }
+
+  repeat rw [MyGroup.mul_assoc] at h2
+  repeat rw [MyGroup.mul_inv] at h2
+  repeat rw [MyGroup.mul_one] at h2
+  exact h2
+}
+
+theorem group_cancel_rule_left_lemma (G : Type u) [MyGroup G] (a b x : G) :
+a = b ↔ MyGroup.mul x a = MyGroup.mul x b := by {
+  -- ->
+  have h1 : a = b -> MyGroup.mul x a = MyGroup.mul x b := by {
+    intro h
+    rw [h]
+  }
+  constructor
+  exact h1
+  -- <-
+  intro h
+  -- use the inverse of x
+  have h2 : MyGroup.mul (MyGroup.inv x) (MyGroup.mul x a) =
+            MyGroup.mul (MyGroup.inv x) (MyGroup.mul x b) := by {
+    rw [h]
+  }
+
+  repeat rw [← MyGroup.mul_assoc] at h2
+  repeat rw [MyGroup.inv_mul] at h2
+  repeat rw [MyGroup.one_mul] at h2
+  exact h2
+}
+
+
+----------------------------------------------------------------
+-- a * b = 1 -> b = a⁻¹
+theorem inv_unique_lemma [MyGroup G] (a b : G) (h : MyGroup.mul a b = MyGroup.one) :
+b = MyGroup.inv a := by {
+  have : MyGroup.mul (MyGroup.inv a) (MyGroup.mul a b) =
+        MyGroup.mul (MyGroup.inv a) MyGroup.one := by {
+    rw [← group_cancel_rule_left_lemma]
+    exact h
+  }
+  rw [MyGroup.mul_one] at this
+  rw [← MyGroup.mul_assoc] at this
+  rw [MyGroup.inv_mul] at this
+  rw [MyGroup.one_mul] at this
+  exact this
+}
+
+
 ----------------------------------------------------------------
 -- (a⁻¹)⁻¹ = a
 theorem double_inv_lemma [MyGroup G] (a : G) :
@@ -60,6 +126,21 @@ MyGroup.inv (MyGroup.inv a) = a := by {
   rw [MyGroup.one_mul]
 }
 
+
+----------------------------------------------------------------
+-- (a * b)⁻¹ = b⁻¹ * a⁻¹
+theorem mul_inv_lemma [MyGroup G] (a b : G) :
+MyGroup.inv (MyGroup.mul a b) = MyGroup.mul (MyGroup.inv b) (MyGroup.inv a) := by {
+  have h1 : MyGroup.mul (MyGroup.mul a b) (MyGroup.mul (MyGroup.inv b) (MyGroup.inv a)) = MyGroup.one := by {
+    rw [MyGroup.mul_assoc]
+    nth_rewrite 2 [← MyGroup.mul_assoc]
+    rw [MyGroup.mul_inv, MyGroup.one_mul]
+    rw [MyGroup.mul_inv]
+  }
+
+  rw [← inv_unique_lemma]
+  exact h1
+}
 --------------------------------------------------------------
 -- Lemma: every nonempty subset of ℕ has a minimum
 theorem nat_minimum_lemma (S : Set ℕ) (h_nonempty : S ≠ ∅) :
@@ -511,32 +592,6 @@ theorem subgroup_iff_lemma (G : Type u) [MyGroup G] (H : Set G) :
 }
 
 
---------------------------------------------------------------
--- in groups, we can do this: a = b ↔ a+x = b+x
-theorem group_cancel_rule_lemma (G : Type u) [MyGroup G] (a b x : G) :
-a = b ↔ MyGroup.mul a x = MyGroup.mul b x := by {
-  -- ->
-  have h1 : a = b -> MyGroup.mul a x = MyGroup.mul b x := by {
-    intro h
-    rw [h]
-  }
-  constructor
-  exact h1
-  -- <-
-  intro h
-  -- use the inverse of x
-  have h2 : MyGroup.mul (MyGroup.mul a x) (MyGroup.inv x) =
-            MyGroup.mul (MyGroup.mul b x) (MyGroup.inv x) := by {
-    rw [h]
-  }
-
-  repeat rw [MyGroup.mul_assoc] at h2
-  repeat rw [MyGroup.mul_inv] at h2
-  repeat rw [MyGroup.mul_one] at h2
-  exact h2
-}
-
-
 ---------------------------------------------------------------
 -- Lemma: a bijective funktion has a inverse function
 theorem bijective_has_inverse_lemma {A : Type u} {B : Type v} (f : A → B)
@@ -682,7 +737,7 @@ theorem homomorphism_neutral_element_lemma (G1 : Type u) (G2 : Type v)
 
   have h1 : MyGroup.mul (φ.f e1) (MyGroup.inv (φ.f e1)) =
             MyGroup.mul (MyGroup.mul (φ.f e1) (φ.f e1)) (MyGroup.inv (φ.f e1)) := by {
-    rw [←group_cancel_rule_lemma]
+    rw [← group_cancel_rule_right_lemma]
     exact h
   }
   rw [MyGroup.mul_assoc] at h1
@@ -710,10 +765,63 @@ theorem homomorphism_inverse_element_lemma (G1 : Type u) (G2 : Type v)
 
   have h2 : MyGroup.mul (MyGroup.mul (φ.f (MyGroup.inv x1)) (φ.f x1)) (MyGroup.inv (φ.f x1)) =
             MyGroup.mul MyGroup.one (MyGroup.inv (φ.f x1)) := by {
-    rw [← group_cancel_rule_lemma]
+    rw [← group_cancel_rule_right_lemma]
     exact h
   }
   rw [MyGroup.mul_assoc] at h2
   rw [MyGroup.mul_inv, MyGroup.one_mul, MyGroup.mul_one] at h2
   rw [h2]
+}
+
+
+--------------------------------------------------------------------
+-- g₁H = g₂H ↔ g₁⁻¹*g₂ ∈ H
+theorem left_coset_eq_lemma (G : Type u) [MyGroup G] (H : Subgroup G) (g1 g2 : G) :
+left_coset G H g1 = left_coset G H g2 ↔
+MyGroup.mul (MyGroup.inv g1) g2 ∈ H.carrier := by {
+  -- ->
+  constructor
+  intro h
+  repeat rw [left_coset] at h
+  sorry
+
+  -- <-
+  intro h
+  repeat rw [left_coset]
+
+  ext x
+  simp
+  constructor
+  intro h2
+  obtain ⟨a, h2, h3⟩ := h2
+  have h_inv : MyGroup.mul (MyGroup.inv g2) g1 ∈ H.carrier := by {
+    have : MyGroup.mul (MyGroup.inv g2) g1 =
+          MyGroup.inv (MyGroup.mul (MyGroup.inv g1) g2) := by {
+      rw [mul_inv_lemma]
+      rw [double_inv_lemma]
+    }
+    rw [this]
+    apply Subgroup.inv_mem
+    exact h
+  }
+  use (MyGroup.mul (MyGroup.mul (MyGroup.inv g2) g1) a)
+  constructor
+  apply Subgroup.mul_mem
+  exact ⟨h_inv, h2⟩
+  rw [MyGroup.mul_assoc]
+  rw [← h3]
+  rw [← MyGroup.mul_assoc]
+  rw [MyGroup.mul_inv, MyGroup.one_mul]
+
+  intro h2
+  obtain ⟨a, h2, h3⟩ := h2
+  use MyGroup.mul (MyGroup.mul (MyGroup.inv g1) g2) a
+  constructor
+  apply Subgroup.mul_mem
+  constructor
+  exact h
+  exact h2
+  repeat rw [← MyGroup.mul_assoc]
+  rw [MyGroup.mul_inv, MyGroup.one_mul]
+  exact h3
 }
