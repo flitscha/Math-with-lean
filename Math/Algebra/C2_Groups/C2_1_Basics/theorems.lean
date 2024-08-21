@@ -141,6 +141,8 @@ MyGroup.inv (MyGroup.mul a b) = MyGroup.mul (MyGroup.inv b) (MyGroup.inv a) := b
   rw [← inv_unique_lemma]
   exact h1
 }
+
+
 --------------------------------------------------------------
 -- Lemma: every nonempty subset of ℕ has a minimum
 theorem nat_minimum_lemma (S : Set ℕ) (h_nonempty : S ≠ ∅) :
@@ -592,6 +594,35 @@ theorem subgroup_iff_lemma (G : Type u) [MyGroup G] (H : Set G) :
 }
 
 
+--------------------------------------------------------------
+-- A Subgroup contains the neutral element
+theorem subgroup_one_mem_lemma (G : Type u) [MyGroup G] (H : Subgroup G) :
+MyGroup.one ∈ H.carrier := by {
+  have h1 : H.carrier ≠ ∅ := by {
+    apply Subgroup.nonempty
+  }
+
+  have h2 : ∃ x : G, x ∈ H.carrier := by {
+    contrapose! h1
+    rw [Set.eq_empty_iff_forall_not_mem]
+    exact h1
+  }
+  obtain ⟨x, h2⟩ := h2
+
+  have h3 : MyGroup.inv x ∈ H.carrier := by {
+    apply Subgroup.inv_mem
+    exact h2
+  }
+
+  have h4 : MyGroup.mul (MyGroup.inv x) x ∈ H.carrier := by {
+    apply Subgroup.mul_mem
+    exact ⟨h3, h2⟩
+  }
+
+  rw [MyGroup.inv_mul] at h4
+  exact h4
+}
+
 ---------------------------------------------------------------
 -- Lemma: a bijective funktion has a inverse function
 theorem bijective_has_inverse_lemma {A : Type u} {B : Type v} (f : A → B)
@@ -781,9 +812,42 @@ left_coset G H g1 = left_coset G H g2 ↔
 MyGroup.mul (MyGroup.inv g1) g2 ∈ H.carrier := by {
   -- ->
   constructor
-  intro h
-  repeat rw [left_coset] at h
-  sorry
+  intro h3
+  repeat rw [left_coset] at h3
+  have h_g2 : g2 ∈ {x | ∃ h : H.carrier, x = MyGroup.mul g2 h} ->
+              g2 ∈ {x | ∃ h : H.carrier, x = MyGroup.mul g1 h} := by {
+    intro h_h
+    rw [h3]
+    exact h_h
+  }
+
+  have h1 : g2 ∈ {x | ∃ h : H.carrier, x = MyGroup.mul g2 ↑h} := by {
+    simp
+    use MyGroup.one
+    constructor
+    apply subgroup_one_mem_lemma
+    rw [MyGroup.mul_one]
+  }
+
+  have h2 : g2 ∈ {x | ∃ h : H.carrier, x = MyGroup.mul g1 ↑h} := by {
+    apply h_g2
+    exact h1
+  }
+
+  simp at h2
+  obtain ⟨a, h_a, h2⟩ := h2
+
+  have h3 : MyGroup.mul (MyGroup.inv g1) g2 =
+            MyGroup.mul (MyGroup.inv g1) (MyGroup.mul g1 a) := by {
+    rw [← group_cancel_rule_left_lemma]
+    exact h2
+  }
+
+  rw [← MyGroup.mul_assoc] at h3
+  rw [MyGroup.inv_mul] at h3
+  rw [MyGroup.one_mul] at h3
+  rw [← h3] at h_a
+  exact h_a
 
   -- <-
   intro h
@@ -824,4 +888,55 @@ MyGroup.mul (MyGroup.inv g1) g2 ∈ H.carrier := by {
   repeat rw [← MyGroup.mul_assoc]
   rw [MyGroup.mul_inv, MyGroup.one_mul]
   exact h3
+}
+
+
+--------------------------------------------------------------------
+-- Hg₁ = Hg₂ ↔ g₁*g₂⁻¹ ∈ H
+theorem right_coset_eq_lemma (G : Type u) [MyGroup G] (H : Subgroup G) (g1 g2 : G) :
+right_coset G H g1 = right_coset G H g2 ↔
+MyGroup.mul g1 (MyGroup.inv g2) ∈ H.carrier := by {
+  sorry
+}
+
+
+-------------------------------------------------------------------
+-- H is a normal Subgroup ↔ h ∈ H, g ∈ G -> g⁻¹hg ∈ H
+theorem normal_subgroup_iff_lemma (G : Type u) [MyGroup G] (K : Set G) :
+(∃ H : normal_subgroup G, H.carrier = K) ↔
+(∃ H : Subgroup G, H.carrier = K ∧
+∀ h : H.carrier, ∀ g : G, MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ K) := by {
+  sorry
+}
+
+
+--------------------------------------------------------------------
+-- in an abelian group, every subgroup is normal
+theorem abelian_subgroup_is_normal_lemma (G : Type u) [AbelianGroup G] (K : Set G) :
+(∃ H : Subgroup G, H.carrier = K -> ∃ H : normal_subgroup G, H.carrier = K) := by {
+  sorry
+}
+
+
+---------------------------------------------------------------------
+-- let φ : G -> H. ker(φ) is a normal subgroup of G
+theorem kernel_is_normal_subgroup_lemma (G : Type u) (H : Type v)
+[MyGroup G] [MyGroup H] (φ : GroupHomomorphism G H) :
+∃ N : normal_subgroup G, N.carrier = ker φ := by {
+  sorry
+}
+
+--------------------------------------------------------------------
+-- let φ : G -> H. im(φ) is a subgroup of H
+theorem image_is_subgroup_lemma (G : Type u) (H : Type v) [MyGroup G] [MyGroup H]
+(φ : GroupHomomorphism G H) : ∃ S : Subgroup H, S.carrier = im φ := by {
+  sorry
+}
+
+
+--------------------------------------------------------------------
+theorem homomorphism_injective_iff_lemma (G : Type u) (H : Type v) [MyGroup G]
+[MyGroup H] (φ : GroupHomomorphism G H) :
+Function.Injective φ.f ↔ ker φ = { MyGroup.one } := by {
+  sorry
 }

@@ -12,7 +12,7 @@ class MyGroup (G : Type u) where
   mul_inv : ∀ a : G, mul a (inv a) = one
 
 
-structure AbelianGroup (G : Type u) extends MyGroup G where
+class AbelianGroup (G : Type u) extends MyGroup G where
   comm : ∀ a b : G, mul a b = mul b a
 
 
@@ -182,3 +182,23 @@ def left_coset (G : Type u) [MyGroup G] (H : Subgroup G) (g : G) : Set G :=
 -- right coset = rechte Nebenklasse
 def right_coset (G : Type u) [MyGroup G] (H : Subgroup G) (g : G) : Set G :=
   { x | ∃ h : H.carrier, x = MyGroup.mul ↑h g }
+
+-- Set of all cosets
+def all_left_cosets (G : Type u) [MyGroup G] (H : Subgroup G) : Set (Set G) :=
+  { x | ∃ g : G, x = left_coset G H g }
+
+def all_right_cosets (G : Type u) [MyGroup G] (H : Subgroup G) : Set (Set G) :=
+  { x | ∃ g : G, x = right_coset G H g }
+
+-- normal subgroup: gH = Hg   ∀ g ∈ G
+structure normal_subgroup (G : Type u) [MyGroup G] extends Subgroup G where
+  normal : ∀ g : G, left_coset G to_Subgroup g = right_coset G to_Subgorup g
+
+
+-- kernel of homomorphism
+def ker {G : Type u} {H : Type v} [MyGroup G] [MyGroup H]
+(φ : GroupHomomorphism G H) : Set G := { g | φ.f g = MyGroup.one }
+
+-- image of homomorphism
+def im {G : Type u} {H : Type v} [MyGroup G] [MyGroup H]
+(φ : GroupHomomorphism G H) : Set H := { h | ∃ g : G, h = φ.f g }
