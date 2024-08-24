@@ -13,7 +13,7 @@ class MyGroup (G : Type u) where
 
 
 class AbelianGroup (G : Type u) extends MyGroup G where
-  comm : ∀ a b : G, mul a b = mul b a
+  mul_comm : ∀ a b : G, mul a b = mul b a
 
 
 structure Subgroup (G : Type u) [MyGroup G] where
@@ -192,8 +192,21 @@ def all_right_cosets (G : Type u) [MyGroup G] (H : Subgroup G) : Set (Set G) :=
 
 -- normal subgroup: gH = Hg   ∀ g ∈ G
 structure normal_subgroup (G : Type u) [MyGroup G] extends Subgroup G where
-  normal : ∀ g : G, left_coset G to_Subgroup g = right_coset G to_Subgorup g
+  normal : ∀ g : G, left_coset G toSubgroup g = right_coset G toSubgroup g
 
+-- normal subgroup is a subgroup
+def normal_sg_to_sg {G : Type u} [MyGroup G] (H : normal_subgroup G) :
+Subgroup G := {
+  carrier := H.carrier
+  nonempty := H.nonempty
+  mul_mem := H.mul_mem
+  inv_mem := H.inv_mem
+}
+
+instance coe_normal_subgroup_to_subgroup {G : Type u} [MyGroup G] :
+Coe (normal_subgroup G) (Subgroup G) := {
+  coe := normal_sg_to_sg
+}
 
 -- kernel of homomorphism
 def ker {G : Type u} {H : Type v} [MyGroup G] [MyGroup H]

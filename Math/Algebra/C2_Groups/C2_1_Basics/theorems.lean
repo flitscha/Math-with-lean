@@ -896,7 +896,77 @@ MyGroup.mul (MyGroup.inv g1) g2 ∈ H.carrier := by {
 theorem right_coset_eq_lemma (G : Type u) [MyGroup G] (H : Subgroup G) (g1 g2 : G) :
 right_coset G H g1 = right_coset G H g2 ↔
 MyGroup.mul g1 (MyGroup.inv g2) ∈ H.carrier := by {
-  sorry
+  -- ->
+  constructor
+  intro h3
+  repeat rw [right_coset] at h3
+  have h_g2 : g1 ∈ {x | ∃ h : H.carrier, x = MyGroup.mul ↑h g1 } ->
+              g1 ∈ {x | ∃ h : H.carrier, x = MyGroup.mul ↑h g2 } := by {
+    intro h_h
+    rw [← h3]
+    exact h_h
+  }
+
+  have h1 : g1 ∈ {x | ∃ h : H.carrier, x = MyGroup.mul ↑h g1} := by {
+    simp
+    use MyGroup.one
+    constructor
+    apply subgroup_one_mem_lemma
+    rw [MyGroup.one_mul]
+  }
+
+  have h2 : g1 ∈ {x | ∃ h : H.carrier, x = MyGroup.mul ↑h g2} := by {
+    apply h_g2
+    exact h1
+  }
+
+  simp at h2
+  obtain ⟨a, h_a, h2⟩ := h2
+
+  have h3 : MyGroup.mul g1 (MyGroup.inv g2) =
+            MyGroup.mul (MyGroup.mul a g2) (MyGroup.inv g2) := by {
+    rw [← group_cancel_rule_right_lemma]
+    exact h2
+  }
+
+  rw [MyGroup.mul_assoc] at h3
+  rw [MyGroup.mul_inv] at h3
+  rw [MyGroup.mul_one] at h3
+  rw [← h3] at h_a
+  exact h_a
+
+  -- <-
+  intro h
+  repeat rw [right_coset]
+
+  ext x
+  simp
+  constructor
+  intro h2
+  obtain ⟨a, h2, h3⟩ := h2
+  use (MyGroup.mul a (MyGroup.mul g1 (MyGroup.inv g2)))
+  constructor
+  apply Subgroup.mul_mem
+  exact ⟨h2, h⟩
+  repeat rw [← MyGroup.mul_assoc]
+  rw [← h3]
+  rw [MyGroup.mul_assoc]
+  rw [MyGroup.inv_mul, MyGroup.mul_one]
+
+  intro h2
+  obtain ⟨a, h2, h3⟩ := h2
+  use (MyGroup.mul a (MyGroup.mul g2 (MyGroup.inv g1)))
+  constructor
+  apply Subgroup.mul_mem
+  constructor
+  exact h2
+  rw [← double_inv_lemma g2]
+  rw [← mul_inv_lemma]
+  apply Subgroup.inv_mem
+  exact h
+  repeat rw [MyGroup.mul_assoc]
+  rw [MyGroup.inv_mul, MyGroup.mul_one]
+  exact h3
 }
 
 
@@ -906,15 +976,127 @@ theorem normal_subgroup_iff_lemma (G : Type u) [MyGroup G] (K : Set G) :
 (∃ H : normal_subgroup G, H.carrier = K) ↔
 (∃ H : Subgroup G, H.carrier = K ∧
 ∀ h : H.carrier, ∀ g : G, MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ K) := by {
-  sorry
+  -- ->
+  constructor
+  intro h1
+  obtain ⟨H, h1⟩ := h1
+  use H
+  constructor
+  exact h1
+
+  intros h g
+  have h_normal : left_coset G H g = right_coset G H g := by {
+    apply normal_subgroup.normal
+  }
+
+  -- h*g ∈ Hg
+  have h_hg : MyGroup.mul ↑h g ∈ (right_coset G (normal_sg_to_sg H) g) := by {
+    rw [right_coset]
+    simp
+    use h
+    simp
+  }
+
+  -- Hg = gH -> h*g ∈ gH
+  have h_hg2 : MyGroup.mul ↑h g ∈ (left_coset G (normal_sg_to_sg H) g) := by {
+    rw [h_normal]
+    exact h_hg
+  }
+
+  -- this means, there exists a h', such that h*g = g*h'
+  have h_h' : ∃ h' ∈ (normal_sg_to_sg H).carrier, MyGroup.mul ↑h g = MyGroup.mul g ↑h' := by {
+    rw [left_coset] at h_hg2
+    simp at h_hg2
+    exact h_hg2
+  }
+
+  -- h' = g⁻¹*h*g
+  obtain ⟨h', h_h', h_hh'⟩ := h_h'
+  have h_eq : h' = MyGroup.mul (MyGroup.mul (MyGroup.inv g) ↑h) g := by {
+    have h_tmp : MyGroup.mul (MyGroup.inv g) (MyGroup.mul (↑h) g) =
+                 MyGroup.mul (MyGroup.inv g) (MyGroup.mul g h') := by {
+      rw [← group_cancel_rule_left_lemma]
+      exact h_hh'
+    }
+    repeat rw [← MyGroup.mul_assoc] at h_tmp
+    rw [MyGroup.inv_mul] at h_tmp
+    rw [MyGroup.one_mul] at h_tmp
+    symm
+    exact h_tmp
+  }
+  rw [← h_eq]
+  rw [← h1]
+  apply h_h'
+
+  -- <-
+  intro h
+  obtain ⟨H, h1, h2⟩ := h
+
+  have h_normal : ∀ g : G, left_coset G H g = right_coset G H g := by {
+    intro g
+    rw [left_coset, right_coset]
+    -- ⊆
+    ext x
+    simp
+    constructor
+    intro h
+    obtain ⟨a, h_a, h_aa⟩ := h
+    specialize h2 ⟨a, h_a⟩ (MyGroup.inv g)
+    simp at h2
+
+    use MyGroup.mul (MyGroup.mul (MyGroup.inv (MyGroup.inv g)) a) (MyGroup.inv g)
+    constructor
+    rw [h1]
+    exact h2
+    rw [MyGroup.mul_assoc]
+    rw [MyGroup.inv_mul]
+    rw [MyGroup.mul_one]
+    rw [double_inv_lemma]
+    exact h_aa
+
+    -- ⊇
+    intro h
+    obtain ⟨a, h_a, h_aa⟩ := h
+    specialize h2 ⟨a, h_a⟩ g
+    simp at h2
+
+    use MyGroup.mul (MyGroup.mul (MyGroup.inv g) a) g
+    constructor
+    rw [h1]
+    exact h2
+    repeat rw [← MyGroup.mul_assoc]
+    rw [MyGroup.mul_inv]
+    rw [MyGroup.one_mul]
+    exact h_aa
+  }
+
+  let H' : normal_subgroup G := {
+    toSubgroup := H
+    normal := h_normal
+  }
+  use H'
 }
 
 
 --------------------------------------------------------------------
 -- in an abelian group, every subgroup is normal
 theorem abelian_subgroup_is_normal_lemma (G : Type u) [AbelianGroup G] (K : Set G) :
-(∃ H : Subgroup G, H.carrier = K -> ∃ H : normal_subgroup G, H.carrier = K) := by {
-  sorry
+(∃ H : Subgroup G, H.carrier = K) -> (∃ H : normal_subgroup G, H.carrier = K) := by {
+  intro h
+  obtain ⟨H, h1⟩ := h
+
+  have : (∀ h : H.carrier, ∀ g : G, MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ K) := by {
+    intros h g
+    rw [AbelianGroup.mul_comm]
+    rw [← MyGroup.mul_assoc]
+    rw [MyGroup.mul_inv]
+    rw [MyGroup.one_mul]
+    rw [← h1]
+    simp
+  }
+
+  rw [normal_subgroup_iff_lemma]
+  use H
 }
 
 
