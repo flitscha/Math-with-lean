@@ -42,7 +42,7 @@ theorem neutral_element_unique_lemma [MyGroup G] (e e' : G)
 
 --------------------------------------------------------------
 -- in groups, we can do this: a = b ↔ a+x = b+x
-theorem group_cancel_rule_right_lemma (G : Type u) [MyGroup G] (a b x : G) :
+theorem group_cancel_rule_right_lemma (G : Type u) [MyGroup G] (x a b : G) :
 a = b ↔ MyGroup.mul a x = MyGroup.mul b x := by {
   -- ->
   have h1 : a = b -> MyGroup.mul a x = MyGroup.mul b x := by {
@@ -65,7 +65,7 @@ a = b ↔ MyGroup.mul a x = MyGroup.mul b x := by {
   exact h2
 }
 
-theorem group_cancel_rule_left_lemma (G : Type u) [MyGroup G] (a b x : G) :
+theorem group_cancel_rule_left_lemma (G : Type u) [MyGroup G] (x a b : G) :
 a = b ↔ MyGroup.mul x a = MyGroup.mul x b := by {
   -- ->
   have h1 : a = b -> MyGroup.mul x a = MyGroup.mul x b := by {
@@ -562,7 +562,7 @@ theorem subgroup_iff_lemma (G : Type u) [MyGroup G] (H : Set G) :
     exact this
   }
 
-  have h_inv : (∀ {a : G}, a ∈ H → MyGroup.inv a ∈ H) := by {
+  have h_inv : (∀ a : G, a ∈ H → MyGroup.inv a ∈ H) := by {
     intro a
     intro h_a
     have : MyGroup.mul (MyGroup.inv a) MyGroup.one ∈ H := by {
@@ -741,26 +741,17 @@ theorem invertable_homomorphism_is_isomorphism_lemma (G1 : Type u) (G2 : Type v)
   use ψ.f
 }
 
-/-
-def G1 : Type u := sorry
-def G2 : Type v := sorry
-instance : MyGroup G1 := sorry
-instance : MyGroup G2 := sorry
-def e1 : G1 := sorry
-def h_e1 : e1 = MyGroup.one := sorry
-def φ : GroupHomomorphism G1 G2 := sorry
-#check MyGroup.one
--/
 
 -------------------------------------------------------------------
 -- group homomorphisms map the neutral element of G1 to the neutral element of G2
 theorem homomorphism_neutral_element_lemma (G1 : Type u) (G2 : Type v)
-[MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) (e1 : G1) (e2 : G2)
-(h_e1 : e1 = MyGroup.one) (h_e2 : e2 = MyGroup.one) : φ.f e1 = e2 := by {
+[MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
+φ.f MyGroup.one = MyGroup.one := by {
+  let e1 : G1 := MyGroup.one
 
   have h : φ.f e1 = MyGroup.mul (φ.f e1) (φ.f e1) := by {
     have h1 : MyGroup.mul e1 e1 = e1 := by {
-      rw [h_e1, MyGroup.mul_one]
+      rw [MyGroup.mul_one]
     }
     nth_rewrite 1 [← h1]
     rw [GroupHomomorphism.mul]
@@ -775,8 +766,6 @@ theorem homomorphism_neutral_element_lemma (G1 : Type u) (G2 : Type v)
   repeat rw [MyGroup.mul_inv] at h1
   rw [MyGroup.mul_one] at h1
   rw [← h1]
-  symm
-  exact h_e2
 }
 
 
@@ -788,9 +777,7 @@ theorem homomorphism_inverse_element_lemma (G1 : Type u) (G2 : Type v)
   intro x1
   have h : φ.f (MyGroup.mul (MyGroup.inv x1) x1) = MyGroup.one := by {
     rw [MyGroup.inv_mul]
-    apply homomorphism_neutral_element_lemma
-    rfl
-    rfl
+    rw [homomorphism_neutral_element_lemma]
   }
   rw [GroupHomomorphism.mul] at h
 
@@ -1102,23 +1089,206 @@ theorem abelian_subgroup_is_normal_lemma (G : Type u) [AbelianGroup G] (K : Set 
 
 ---------------------------------------------------------------------
 -- let φ : G -> H. ker(φ) is a normal subgroup of G
-theorem kernel_is_normal_subgroup_lemma (G : Type u) (H : Type v)
-[MyGroup G] [MyGroup H] (φ : GroupHomomorphism G H) :
-∃ N : normal_subgroup G, N.carrier = ker φ := by {
-  sorry
+theorem kernel_is_normal_subgroup_lemma (G1 : Type u) (G2 : Type v)
+[MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
+∃ N : normal_subgroup G1, N.carrier = ker φ := by {
+
+  -- first we show, that the kernel is a subgroup
+  have h_sg : ∃ H : Subgroup G1, H.carrier = ker φ := by {
+
+    have h_nonempty : ker φ ≠ ∅ := by {
+      rw [ker]
+      have h_e : MyGroup.one ∈ {g | GroupHomomorphism.f g = MyGroup.one} := by {
+        simp
+        rw [homomorphism_neutral_element_lemma G1 G2]
+      }
+      contrapose! h_e
+      apply Set.eq_empty_iff_forall_not_mem.mp at h_e
+      specialize h_e MyGroup.one
+      exact h_e
+    }
+
+    have h_mul_mem : ∀ a b : G1, (a ∈ ker φ ∧ b ∈ ker φ) →
+          MyGroup.mul a b ∈ ker φ := by {
+      rw [ker]
+      simp
+      intros a b
+      intros h_a h_b
+      rw [GroupHomomorphism.mul]
+      rw [h_a, h_b]
+      rw [MyGroup.mul_one]
+    }
+
+    have h_inv_mem : ∀ a : G1, a ∈ ker φ → MyGroup.inv a ∈ ker φ := by {
+      rw [ker]
+      simp
+      intro a
+      intro h
+      rw [homomorphism_inverse_element_lemma]
+      rw [h]
+      have h_tmp : (MyGroup.mul (MyGroup.inv MyGroup.one) MyGroup.one : G2) =
+                   MyGroup.mul MyGroup.one MyGroup.one := by {
+        rw [MyGroup.one_mul]
+        rw [MyGroup.inv_mul]
+      }
+      rw [← group_cancel_rule_right_lemma] at h_tmp
+      exact h_tmp
+    }
+
+    let H : Subgroup G1 := {
+      carrier := ker φ
+      nonempty := h_nonempty
+      mul_mem := h_mul_mem
+      inv_mem := h_inv_mem
+    }
+    use H
+  }
+  obtain ⟨H, h_sg⟩ := h_sg
+
+  -- it is even a normal subgroup
+  have h_normal : ∀ h : H.carrier, ∀ g : G1,
+              MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ ker φ := by {
+    intros h g
+    rw [ker]
+    simp
+    repeat rw [GroupHomomorphism.mul]
+    rw [homomorphism_inverse_element_lemma]
+    have h_tmp : ∃ h' : G1, h' = h ∧ h' ∈ ker φ := by {
+      use h
+      simp
+      rw [← h_sg]
+      simp
+    }
+    obtain ⟨h', h_h, h_tmp⟩ := h_tmp
+    rw [h_h] at h_tmp
+    rw [ker] at h_tmp
+    simp at h_tmp
+    rw [h_tmp]
+    rw [MyGroup.mul_one]
+    rw [MyGroup.inv_mul]
+  }
+
+  rw [normal_subgroup_iff_lemma]
+  use H
 }
 
 --------------------------------------------------------------------
 -- let φ : G -> H. im(φ) is a subgroup of H
-theorem image_is_subgroup_lemma (G : Type u) (H : Type v) [MyGroup G] [MyGroup H]
-(φ : GroupHomomorphism G H) : ∃ S : Subgroup H, S.carrier = im φ := by {
-  sorry
+theorem image_is_subgroup_lemma (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGroup G2]
+(φ : GroupHomomorphism G1 G2) : ∃ H : Subgroup G2, H.carrier = im φ := by {
+
+  have h_nonempty : im φ ≠ ∅ := by {
+    have h_e : MyGroup.one ∈ im φ := by {
+      rw [im]
+      simp
+      use MyGroup.one
+      rw [homomorphism_neutral_element_lemma]
+    }
+    contrapose! h_e
+    apply Set.eq_empty_iff_forall_not_mem.mp at h_e
+    specialize h_e MyGroup.one
+    exact h_e
+  }
+
+  have h_mul_mem : ∀ a b : G2, (a ∈ im φ ∧ b ∈ im φ) → MyGroup.mul a b ∈ im φ := by {
+    rw [im]
+    intros a b
+    intro ⟨h_a, h_b⟩
+    simp at h_a h_b
+    simp
+    obtain ⟨a', h_a⟩ := h_a
+    obtain ⟨b', h_b⟩ := h_b
+    use MyGroup.mul a' b'
+    rw [GroupHomomorphism.mul]
+    rw [h_a, h_b]
+  }
+
+  have h_inv_mem : ∀ a : G2, a ∈ im φ → MyGroup.inv a ∈ im φ := by {
+    rw [im]
+    intro a
+    intro h_a
+    simp at h_a
+    simp
+    obtain ⟨a', h_a⟩ := h_a
+    use MyGroup.inv a'
+    rw [homomorphism_inverse_element_lemma]
+    rw [h_a]
+  }
+
+  let H : Subgroup G2 := {
+    carrier := im φ
+    nonempty := h_nonempty
+    mul_mem := h_mul_mem
+    inv_mem := h_inv_mem
+  }
+  use H
 }
 
 
 --------------------------------------------------------------------
+-- φ is injective ↔ ker φ = { one }
 theorem homomorphism_injective_iff_lemma (G : Type u) (H : Type v) [MyGroup G]
 [MyGroup H] (φ : GroupHomomorphism G H) :
 Function.Injective φ.f ↔ ker φ = { MyGroup.one } := by {
-  sorry
+  -- ->
+  constructor
+  intro h
+  rw [Function.Injective] at h
+  rw [ker]
+  ext x
+  constructor
+  simp
+  intro h_x
+  have h_e : φ.f MyGroup.one = MyGroup.one := by {
+    rw [homomorphism_neutral_element_lemma]
+  }
+  apply h
+  rw [h_e]
+  exact h_x
+
+  simp
+  intro h_x
+  rw [h_x]
+  rw [homomorphism_neutral_element_lemma]
+
+  -- <-
+  intro h
+  contrapose! h
+  rw [Function.Injective] at h
+  simp at h
+
+  obtain ⟨a, b, h_eq, h⟩ := h
+
+  have h_ne_one : MyGroup.mul b (MyGroup.inv a) ≠ MyGroup.one := by {
+    contrapose! h
+    have h_tmp : MyGroup.mul (MyGroup.mul b (MyGroup.inv a)) a =
+                 MyGroup.mul MyGroup.one a := by {
+      rw [← group_cancel_rule_right_lemma]
+      exact h
+    }
+    rw [MyGroup.mul_assoc] at h_tmp
+    rw [MyGroup.inv_mul] at h_tmp
+    rw [MyGroup.mul_one, MyGroup.one_mul] at h_tmp
+    symm
+    exact h_tmp
+  }
+
+  have h_mem : MyGroup.mul b (MyGroup.inv a) ∈ ker φ := by {
+    rw [ker]
+    simp
+    rw [GroupHomomorphism.mul]
+    rw [homomorphism_inverse_element_lemma]
+    rw [h_eq]
+    rw [MyGroup.mul_inv]
+  }
+
+  intro h_ker
+
+  have h_eq_one : MyGroup.mul b (MyGroup.inv a) = MyGroup.one := by {
+    rw [h_ker] at h_mem
+    simp at h_mem
+    exact h_mem
+  }
+
+  exact h_ne_one h_eq_one
 }

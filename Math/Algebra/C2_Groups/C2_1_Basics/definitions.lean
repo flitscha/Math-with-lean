@@ -20,7 +20,7 @@ structure Subgroup (G : Type u) [MyGroup G] where
   carrier : Set G -- this is a subset of G. (the subgroup)
   nonempty : carrier ≠ ∅
   mul_mem : ∀ a b : G, (a ∈ carrier ∧ b ∈ carrier) → MyGroup.mul a b ∈ carrier
-  inv_mem : ∀ {a : G}, a ∈ carrier → MyGroup.inv a ∈ carrier
+  inv_mem : ∀ a : G, a ∈ carrier → MyGroup.inv a ∈ carrier
 
 
 -- proof, that a Subgroup is a group
