@@ -215,3 +215,51 @@ def ker {G : Type u} {H : Type v} [MyGroup G] [MyGroup H]
 -- image of homomorphism
 def im {G : Type u} {H : Type v} [MyGroup G] [MyGroup H]
 (φ : GroupHomomorphism G H) : Set H := { h | ∃ g : G, h = φ.f g }
+
+
+-- two sets have the same cardinality iff there exists a bijection
+def same_cardinality {m1 : Type u} {m2 : Type v}
+(M1 : Set m1) (M2 : Set m2) : Prop :=
+  ∃ φ : M1 -> M2, Function.Bijective φ
+
+
+-- Definition 2.1.15 (difficult with cardinality)
+
+
+
+-- we want to show, that the set of all left cosets is a group.
+-- We define this structs, to make is easier
+structure left_coset' (G : Type u) [MyGroup G] (H : Subgroup G) :=
+  g : G
+  carrier : Set G
+  h_carrier : carrier = left_coset G H g
+
+def left_coset_mul {G : Type u} [MyGroup G] {H : normal_subgroup G}
+(A B : left_coset' G H) : left_coset' G H := by {
+  obtain ⟨g_a, _⟩ := A
+  obtain ⟨g_b, _⟩ := B
+  exact {
+    g := MyGroup.mul g_a g_b,
+    carrier := left_coset G H (MyGroup.mul g_a g_b),
+    h_carrier := by simp
+  }
+}
+
+def left_coset_one {G : Type u} [MyGroup G] {H : normal_subgroup G} :
+left_coset' G H := by {
+  exact {
+    g := MyGroup.one
+    carrier := left_coset G H MyGroup.one
+    h_carrier := by simp
+  }
+}
+
+def left_coset_inv {G : Type u} [MyGroup G] {H : normal_subgroup G}
+(A : left_coset' G H) : left_coset' G H := by {
+  obtain ⟨g_a, _⟩ := A
+  exact {
+    g := MyGroup.inv g_a
+    carrier := left_coset G H (MyGroup.inv g_a)
+    h_carrier := by simp
+  }
+}

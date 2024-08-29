@@ -1,5 +1,7 @@
 import Math.Algebra.C2_Groups.C2_1_Basics.definitions
 import Mathlib.Tactic.Ring
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Finset.Basic
 
 ----------------------------------------------------------------
 -- (ℤ, +) is a group
@@ -958,8 +960,8 @@ MyGroup.mul g1 (MyGroup.inv g2) ∈ H.carrier := by {
 
 
 -------------------------------------------------------------------
--- H is a normal Subgroup ↔ h ∈ H, g ∈ G -> g⁻¹hg ∈ H
-theorem normal_subgroup_iff_lemma (G : Type u) [MyGroup G] (K : Set G) :
+-- H is a normal Subgroup ↔ ∀ h ∈ H, g ∈ G -> g⁻¹hg ∈ H
+theorem normal_subgroup_iff_lemma {G : Type u} [MyGroup G] (K : Set G) :
 (∃ H : normal_subgroup G, H.carrier = K) ↔
 (∃ H : Subgroup G, H.carrier = K ∧
 ∀ h : H.carrier, ∀ g : G, MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ K) := by {
@@ -1087,6 +1089,7 @@ theorem abelian_subgroup_is_normal_lemma (G : Type u) [AbelianGroup G] (K : Set 
 }
 
 
+-- Lemma 2.1.11
 ---------------------------------------------------------------------
 -- let φ : G -> H. ker(φ) is a normal subgroup of G
 theorem kernel_is_normal_subgroup_lemma (G1 : Type u) (G2 : Type v)
@@ -1172,6 +1175,7 @@ theorem kernel_is_normal_subgroup_lemma (G1 : Type u) (G2 : Type v)
   use H
 }
 
+
 --------------------------------------------------------------------
 -- let φ : G -> H. im(φ) is a subgroup of H
 theorem image_is_subgroup_lemma (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGroup G2]
@@ -1227,8 +1231,8 @@ theorem image_is_subgroup_lemma (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGrou
 
 --------------------------------------------------------------------
 -- φ is injective ↔ ker φ = { one }
-theorem homomorphism_injective_iff_lemma (G : Type u) (H : Type v) [MyGroup G]
-[MyGroup H] (φ : GroupHomomorphism G H) :
+theorem homomorphism_injective_iff_lemma (G1 : Type u) (G2 : Type v) [MyGroup G1]
+[MyGroup G2] (φ : GroupHomomorphism G1 G2) :
 Function.Injective φ.f ↔ ker φ = { MyGroup.one } := by {
   -- ->
   constructor
@@ -1291,4 +1295,301 @@ Function.Injective φ.f ↔ ker φ = { MyGroup.one } := by {
   }
 
   exact h_ne_one h_eq_one
+}
+
+
+-- Proposition 2.1.12
+-------------------------------------------------------------------
+-- left cosets are disjoint, or equal
+theorem left_cosets_disjoint_lemma (G : Type u) [MyGroup G]
+(H : Subgroup G) (g1 g2 : G) : left_coset G H g1 = left_coset G H g2 ∨
+(left_coset G H g1) ∩ (left_coset G H g2) = ∅ := by {
+  by_cases h_case : left_coset G H g1 = left_coset G H g2
+  case pos =>
+    left
+    exact h_case
+
+  case neg =>
+    right
+    contrapose! h_case
+    rw [Set.nonempty_iff_ne_empty] at h_case
+    have h_a : ∃ x : G, x ∈ left_coset G H g1 ∧ x ∈ left_coset G H g2 := by {
+      contrapose! h_case
+      rw [Set.eq_empty_iff_forall_not_mem]
+      simp
+      exact h_case
+    }
+    obtain ⟨x, h_x1, h_x2⟩ := h_a
+    obtain ⟨a1, h_x1⟩ := h_x1
+    obtain ⟨a2, h_x2⟩ := h_x2
+    clear h_case
+
+    rw [left_coset_eq_lemma]
+    have h_a1 : a1 = MyGroup.mul (MyGroup.mul (MyGroup.inv g1) g2) a2 := by {
+      rw [MyGroup.mul_assoc]
+      rw [← h_x2]
+      rw [h_x1]
+      rw [← MyGroup.mul_assoc]
+      rw [MyGroup.inv_mul, MyGroup.one_mul]
+    }
+
+    have h : MyGroup.mul (MyGroup.inv g1) g2 =
+             MyGroup.mul (MyGroup.mul (MyGroup.inv g1) g2)
+                         (MyGroup.mul a2 (MyGroup.inv a2)) := by {
+      rw [MyGroup.mul_inv]
+      rw [MyGroup.mul_one]
+    }
+    rw [h]
+    repeat rw [← MyGroup.mul_assoc]
+    apply Subgroup.mul_mem
+    constructor
+    rw [← h_a1]
+    simp
+
+    apply Subgroup.inv_mem
+    simp
+}
+
+
+---------------------------------------------------------------------
+-- cosets have the same cardinality
+theorem left_coset_cardianlity_lemma (G : Type u) [MyGroup G]
+(H : Subgroup G) (g : G) :
+same_cardinality H.carrier (left_coset G H g) := by {
+  rw [same_cardinality]
+  use (λ h => by {
+    rw [left_coset]
+    use ↑(MyGroup.mul g ↑h)
+    simp
+    use h
+    simp
+  })
+  rw [Function.Bijective]
+  constructor
+  rw [Function.Injective]
+  simp
+  intros _ _ _ _ h
+  rw [← group_cancel_rule_left_lemma] at h
+  exact h
+  rw [Function.Surjective]
+  simp
+  rw [left_coset]
+  intros a h_a
+  simp at h_a
+  obtain ⟨a_1, h_a, h_aa⟩ := h_a
+  use a_1
+  constructor
+  exact h_a
+  symm
+  exact h_aa
+}
+
+theorem right_coset_cardianlity_lemma (G : Type u) [MyGroup G]
+(H : Subgroup G) (g : G) :
+same_cardinality H.carrier (right_coset G H g) := by {
+  rw [same_cardinality]
+  use (λ h => by {
+    rw [right_coset]
+    use ↑(MyGroup.mul ↑h g)
+    simp
+    use h
+    simp
+  })
+  rw [Function.Bijective]
+  constructor
+  rw [Function.Injective]
+  simp
+  intros _ _ _ _ h
+  rw [← group_cancel_rule_right_lemma] at h
+  exact h
+  rw [Function.Surjective]
+  simp
+  rw [right_coset]
+  intros a h_a
+  simp at h_a
+  obtain ⟨a_1, h_a, h_aa⟩ := h_a
+  use a_1
+  constructor
+  exact h_a
+  symm
+  exact h_aa
+}
+
+-----------------------------------------------------------------
+-- G is the union of its cosets
+theorem left_coset_union_lemma (G : Type u) [MyGroup G] (H : Subgroup G) :
+⋃ g : G, (left_coset G H g) = { x | ∃ g : G, x = g } := by {
+  ext g
+  simp
+  use g
+  rw [left_coset]
+  simp
+  use MyGroup.one
+  constructor
+  apply subgroup_one_mem_lemma
+  rw [MyGroup.mul_one]
+}
+
+theorem right_coset_union_lemma (G : Type u) [MyGroup G] (H : Subgroup G) :
+⋃ g : G, (right_coset G H g) = { x | ∃ g : G, x = g } := by {
+  ext g
+  simp
+  use g
+  rw [right_coset]
+  simp
+  use MyGroup.one
+  constructor
+  apply subgroup_one_mem_lemma
+  rw [MyGroup.one_mul]
+}
+
+
+-- theorem 2.1.13 (Lagrange theorem)
+-- difficult with cardinality
+
+
+-- theorem 2.1.16
+/-
+theorem coset_mul_welldefined_lemma (G : Type u) [MyGroup G] (H : normal_subgroup G) :
+∀ g1 g2 g1' g2': G,
+(left_coset G H g1 = left_coset G H g1' ∧
+left_coset G H g2 = left_coset G H g2') ->
+left_coset G H (MyGroup.mul g1 g2) = left_coset G H (MyGroup.mul g1' g2') := by {
+  intros g1 g2 g1' g2'
+  intro h
+  obtain ⟨h1, h2⟩ := h
+  rw [left_coset_eq_lemma] at h1 h2
+  rw [left_coset_eq_lemma]
+  -- we use, that H is normal
+  have h : ∃ h : H.carrier, MyGroup.mul (MyGroup.mul (MyGroup.inv g1) g1') g2' =
+                  MyGroup.mul g2' h := by {
+    have h_K : (∃ H' : normal_subgroup G, H'.carrier = H.carrier) := by {
+      use H
+    }
+    have h_normal : ∀ h : H.carrier, ∀ g : G,
+        MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ H.carrier := by {
+      rw [normal_subgroup_iff_lemma H.carrier] at h_K
+      obtain ⟨H', h_eq, h⟩ := h_K
+      rw [h_eq] at h
+      exact h
+    }
+    let g : H.carrier := by {
+      use (MyGroup.mul (MyGroup.inv g1) g1')
+      exact h1
+    }
+    specialize h_normal g g2'
+
+    let gg : H.carrier := by {
+      use (MyGroup.mul (MyGroup.mul (MyGroup.inv g2') ↑g) g2')
+    }
+    use gg
+    simp [gg]
+    repeat rw [← MyGroup.mul_assoc]
+    rw [MyGroup.mul_inv, MyGroup.one_mul]
+  }
+
+  obtain ⟨h, h3⟩ := h
+  rw [mul_inv_lemma]
+  repeat rw [MyGroup.mul_assoc]
+  nth_rewrite 2 [← MyGroup.mul_assoc]
+  rw [h3]
+  rw [← MyGroup.mul_assoc]
+  apply Subgroup.mul_mem
+  constructor
+  apply h2
+
+  have : ↑h ∈ H.carrier := by {
+    simp
+  }
+  apply this
+}
+-/
+
+theorem coset_mul_welldefined_lemma ( G : Type u) [MyGroup G] (H : normal_subgroup G)
+(a a' b b' : left_coset' G H) :
+a.carrier = a'.carrier ∧ b.carrier = b'.carrier ->
+(left_coset_mul a b).carrier = (left_coset_mul a' b').carrier := by {
+  sorry
+}
+
+theorem coset_inv_welldefined_lemma (G : Type u) [MyGroup G] (H : normal_subgroup G)
+(a a' : left_coset' G H) :
+a.carrier = a'.carrier ->
+(left_coset_inv a).carrier = (left_coset_inv a').carrier := by {
+  intro h
+  obtain ⟨g_a, carrier_a, h_carrier_a⟩ := a
+  obtain ⟨g_a', carrier_a', h_carrier_a'⟩ := a'
+  simp at h
+  repeat rw [left_coset_inv]
+  simp
+  sorry
+
+
+}
+
+
+-----------------------------------------------------------------------------
+-- the set of all left cosets is a group
+instance (G : Type u) [MyGroup G] (H : normal_subgroup G) :
+MyGroup (left_coset' G H) := {
+  mul := left_coset_mul
+  one := left_coset_one
+  inv := left_coset_inv
+  mul_assoc := by {
+    intros a b c
+    obtain ⟨g_a, _⟩ := a
+    obtain ⟨g_b, _⟩ := b
+    obtain ⟨g_c, _⟩ := c
+
+    have : MyGroup.mul (MyGroup.mul g_a g_b) g_c = MyGroup.mul g_a (MyGroup.mul g_b g_c) := by {
+      apply MyGroup.mul_assoc
+    }
+    repeat rw [left_coset_mul]
+    simp
+    constructor
+    exact this
+    rw [this]
+  }
+  one_mul := by {
+    intro a
+    obtain ⟨a, g, h_a, h⟩ := a
+    rw [left_coset_mul, left_coset_one]
+    simp
+    constructor
+    apply MyGroup.one_mul
+    rw [MyGroup.one_mul]
+  }
+  mul_one := by {
+    intro a
+    obtain ⟨a, g, h_a, h⟩ := a
+    rw [left_coset_mul, left_coset_one]
+    simp
+    constructor
+    apply MyGroup.mul_one
+    rw [MyGroup.mul_one]
+  }
+  inv_mul := by {
+    intro a
+    obtain ⟨g_a, _⟩ := a
+    rw [left_coset_mul, left_coset_inv, left_coset_one]
+    simp
+    constructor
+    apply MyGroup.inv_mul
+    have : (MyGroup.mul (MyGroup.inv g_a) g_a) = MyGroup.one := by {
+      apply MyGroup.inv_mul
+    }
+    rw [this]
+  }
+  mul_inv := by {
+    intro a
+    obtain ⟨g_a, _⟩ := a
+    rw [left_coset_mul, left_coset_inv, left_coset_one]
+    simp
+    have : MyGroup.mul g_a (MyGroup.inv g_a) = MyGroup.one := by {
+      apply MyGroup.mul_inv
+    }
+    constructor
+    exact this
+    rw [this]
+  }
 }
