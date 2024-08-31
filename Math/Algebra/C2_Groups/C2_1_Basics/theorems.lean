@@ -961,25 +961,19 @@ MyGroup.mul g1 (MyGroup.inv g2) ∈ H.carrier := by {
 
 -------------------------------------------------------------------
 -- H is a normal Subgroup ↔ ∀ h ∈ H, g ∈ G -> g⁻¹hg ∈ H
-theorem normal_subgroup_iff_lemma {G : Type u} [MyGroup G] (K : Set G) :
-(∃ H : normal_subgroup G, H.carrier = K) ↔
-(∃ H : Subgroup G, H.carrier = K ∧
-∀ h : H.carrier, ∀ g : G, MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ K) := by {
+theorem normal_iff_lemma {G : Type u} [MyGroup G] (H : Subgroup G) :
+(∀ g : G, left_coset G H g = right_coset G H g) ↔
+(∀ h : H.carrier, ∀ g : G, MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ H.carrier) := by {
   -- ->
   constructor
   intro h1
-  obtain ⟨H, h1⟩ := h1
-  use H
-  constructor
-  exact h1
-
   intros h g
   have h_normal : left_coset G H g = right_coset G H g := by {
-    apply normal_subgroup.normal
+    apply h1
   }
 
   -- h*g ∈ Hg
-  have h_hg : MyGroup.mul ↑h g ∈ (right_coset G (normal_sg_to_sg H) g) := by {
+  have h_hg : MyGroup.mul ↑h g ∈ (right_coset G H g) := by {
     rw [right_coset]
     simp
     use h
@@ -987,13 +981,13 @@ theorem normal_subgroup_iff_lemma {G : Type u} [MyGroup G] (K : Set G) :
   }
 
   -- Hg = gH -> h*g ∈ gH
-  have h_hg2 : MyGroup.mul ↑h g ∈ (left_coset G (normal_sg_to_sg H) g) := by {
+  have h_hg2 : MyGroup.mul ↑h g ∈ (left_coset G H g) := by {
     rw [h_normal]
     exact h_hg
   }
 
   -- this means, there exists a h', such that h*g = g*h'
-  have h_h' : ∃ h' ∈ (normal_sg_to_sg H).carrier, MyGroup.mul ↑h g = MyGroup.mul g ↑h' := by {
+  have h_h' : ∃ h' ∈ H.carrier, MyGroup.mul ↑h g = MyGroup.mul g ↑h' := by {
     rw [left_coset] at h_hg2
     simp at h_hg2
     exact h_hg2
@@ -1014,58 +1008,74 @@ theorem normal_subgroup_iff_lemma {G : Type u} [MyGroup G] (K : Set G) :
     exact h_tmp
   }
   rw [← h_eq]
-  rw [← h1]
   apply h_h'
 
   -- <-
   intro h
-  obtain ⟨H, h1, h2⟩ := h
+  intro g
+  rw [left_coset, right_coset]
+  -- ⊆
+  ext x
+  simp
+  constructor
+  intro h1
+  obtain ⟨a, h_a, h_aa⟩ := h1
+  specialize h ⟨a, h_a⟩ (MyGroup.inv g)
+  simp at h
 
-  have h_normal : ∀ g : G, left_coset G H g = right_coset G H g := by {
-    intro g
-    rw [left_coset, right_coset]
-    -- ⊆
-    ext x
-    simp
-    constructor
-    intro h
-    obtain ⟨a, h_a, h_aa⟩ := h
-    specialize h2 ⟨a, h_a⟩ (MyGroup.inv g)
-    simp at h2
+  use MyGroup.mul (MyGroup.mul (MyGroup.inv (MyGroup.inv g)) a) (MyGroup.inv g)
+  constructor
+  --rw [h1]
+  apply h
+  rw [MyGroup.mul_assoc]
+  rw [MyGroup.inv_mul]
+  rw [MyGroup.mul_one]
+  rw [double_inv_lemma]
+  rw [h_aa]
 
-    use MyGroup.mul (MyGroup.mul (MyGroup.inv (MyGroup.inv g)) a) (MyGroup.inv g)
-    constructor
-    rw [h1]
-    exact h2
-    rw [MyGroup.mul_assoc]
-    rw [MyGroup.inv_mul]
-    rw [MyGroup.mul_one]
-    rw [double_inv_lemma]
-    exact h_aa
+  -- ⊇
+  intro h1
+  obtain ⟨a, h_a, h_aa⟩ := h1
+  specialize h ⟨a, h_a⟩ g
+  simp at h
 
-    -- ⊇
-    intro h
-    obtain ⟨a, h_a, h_aa⟩ := h
-    specialize h2 ⟨a, h_a⟩ g
-    simp at h2
+  use MyGroup.mul (MyGroup.mul (MyGroup.inv g) a) g
+  constructor
+  exact h
+  repeat rw [← MyGroup.mul_assoc]
+  rw [MyGroup.mul_inv]
+  rw [MyGroup.one_mul]
+  exact h_aa
+}
 
-    use MyGroup.mul (MyGroup.mul (MyGroup.inv g) a) g
-    constructor
-    rw [h1]
-    exact h2
-    repeat rw [← MyGroup.mul_assoc]
-    rw [MyGroup.mul_inv]
-    rw [MyGroup.one_mul]
-    exact h_aa
-  }
+theorem normal_subgroup_iff_lemma {G : Type u} [MyGroup G] (K : Set G) :
+(∃ H : normal_subgroup G, H.carrier = K) ↔
+(∃ H : Subgroup G, H.carrier = K ∧
+∀ h : H.carrier, ∀ g : G, MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ K) := by {
+  -- ->
+  constructor
+  intro h1
+  obtain ⟨H, h1⟩ := h1
+  use H
+  constructor
+  exact h1
+  rw [← h1]
+  have : H.carrier = (normal_sg_to_sg H).carrier := by norm_cast
+  rw [this]
+  rw [← normal_iff_lemma ↑(normal_sg_to_sg H)]
+  exact H.normal
 
+  -- <-
+  intro h1
+  obtain ⟨H, h1, h2⟩ := h1
+  rw [← h1] at h2
+  rw [← normal_iff_lemma] at h2
   let H' : normal_subgroup G := {
     toSubgroup := H
-    normal := h_normal
+    normal := h2
   }
   use H'
 }
-
 
 --------------------------------------------------------------------
 -- in an abelian group, every subgroup is normal
@@ -1084,83 +1094,68 @@ theorem abelian_subgroup_is_normal_lemma (G : Type u) [AbelianGroup G] (K : Set 
     simp
   }
 
-  rw [normal_subgroup_iff_lemma]
-  use H
+  let H' : normal_subgroup G := {
+    toSubgroup := H
+    normal := by {
+      rw [normal_iff_lemma]
+      rw [← h1] at this
+      exact this
+    }
+  }
+  use H'
 }
 
 
 -- Lemma 2.1.11
 ---------------------------------------------------------------------
--- let φ : G -> H. ker(φ) is a normal subgroup of G
-theorem kernel_is_normal_subgroup_lemma (G1 : Type u) (G2 : Type v)
-[MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
-∃ N : normal_subgroup G1, N.carrier = ker φ := by {
-
-  -- first we show, that the kernel is a subgroup
-  have h_sg : ∃ H : Subgroup G1, H.carrier = ker φ := by {
-
-    have h_nonempty : ker φ ≠ ∅ := by {
-      rw [ker]
-      have h_e : MyGroup.one ∈ {g | GroupHomomorphism.f g = MyGroup.one} := by {
-        simp
-        rw [homomorphism_neutral_element_lemma G1 G2]
-      }
-      contrapose! h_e
-      apply Set.eq_empty_iff_forall_not_mem.mp at h_e
-      specialize h_e MyGroup.one
-      exact h_e
-    }
-
-    have h_mul_mem : ∀ a b : G1, (a ∈ ker φ ∧ b ∈ ker φ) →
-          MyGroup.mul a b ∈ ker φ := by {
+-- ker φ is a normal subgroup
+def ker_to_normal_subgroup {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
+(φ : GroupHomomorphism G1 G2) : normal_subgroup G1 := {
+  carrier := ker φ
+  nonempty := by {
+    have h : MyGroup.one ∈ ker φ := by {
       rw [ker]
       simp
-      intros a b
-      intros h_a h_b
-      rw [GroupHomomorphism.mul]
-      rw [h_a, h_b]
-      rw [MyGroup.mul_one]
+      apply homomorphism_neutral_element_lemma
     }
-
-    have h_inv_mem : ∀ a : G1, a ∈ ker φ → MyGroup.inv a ∈ ker φ := by {
-      rw [ker]
-      simp
-      intro a
-      intro h
-      rw [homomorphism_inverse_element_lemma]
-      rw [h]
-      have h_tmp : (MyGroup.mul (MyGroup.inv MyGroup.one) MyGroup.one : G2) =
-                   MyGroup.mul MyGroup.one MyGroup.one := by {
-        rw [MyGroup.one_mul]
-        rw [MyGroup.inv_mul]
-      }
-      rw [← group_cancel_rule_right_lemma] at h_tmp
-      exact h_tmp
-    }
-
-    let H : Subgroup G1 := {
-      carrier := ker φ
-      nonempty := h_nonempty
-      mul_mem := h_mul_mem
-      inv_mem := h_inv_mem
-    }
-    use H
+    contrapose! h
+    rw [Set.eq_empty_iff_forall_not_mem] at h
+    apply h
   }
-  obtain ⟨H, h_sg⟩ := h_sg
-
-  -- it is even a normal subgroup
-  have h_normal : ∀ h : H.carrier, ∀ g : G1,
-              MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ ker φ := by {
-    intros h g
+  mul_mem := by {
+    rw [ker]
+    simp
+    intros a b
+    intros h_a h_b
+    rw [GroupHomomorphism.mul]
+    rw [h_a, h_b]
+    rw [MyGroup.mul_one]
+  }
+  inv_mem := by {
+    rw [ker]
+    simp
+    intro a
+    intro h
+    rw [homomorphism_inverse_element_lemma]
+    rw [h]
+    have h_tmp : (MyGroup.mul (MyGroup.inv MyGroup.one) MyGroup.one : G2) =
+                 MyGroup.mul MyGroup.one MyGroup.one := by {
+      rw [MyGroup.one_mul]
+      rw [MyGroup.inv_mul]
+    }
+    rw [← group_cancel_rule_right_lemma] at h_tmp
+    exact h_tmp
+  }
+  normal := by {
+    rw [normal_iff_lemma]
+    simp
+    intros h h_ker g
     rw [ker]
     simp
     repeat rw [GroupHomomorphism.mul]
     rw [homomorphism_inverse_element_lemma]
     have h_tmp : ∃ h' : G1, h' = h ∧ h' ∈ ker φ := by {
       use h
-      simp
-      rw [← h_sg]
-      simp
     }
     obtain ⟨h', h_h, h_tmp⟩ := h_tmp
     rw [h_h] at h_tmp
@@ -1170,31 +1165,33 @@ theorem kernel_is_normal_subgroup_lemma (G1 : Type u) (G2 : Type v)
     rw [MyGroup.mul_one]
     rw [MyGroup.inv_mul]
   }
-
-  rw [normal_subgroup_iff_lemma]
-  use H
 }
 
 
---------------------------------------------------------------------
--- let φ : G -> H. im(φ) is a subgroup of H
-theorem image_is_subgroup_lemma (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGroup G2]
-(φ : GroupHomomorphism G1 G2) : ∃ H : Subgroup G2, H.carrier = im φ := by {
+theorem kernel_is_normal_subgroup_lemma (G1 : Type u) (G2 : Type v)
+[MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
+∃ N : normal_subgroup G1, N.carrier = ker φ := by {
+  use ker_to_normal_subgroup φ
+  rw [ker_to_normal_subgroup]
+}
 
-  have h_nonempty : im φ ≠ ∅ := by {
-    have h_e : MyGroup.one ∈ im φ := by {
+--------------------------------------------------------------------
+-- im φ is a subgroup
+def image_to_subgroup {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
+(φ : GroupHomomorphism G1 G2) : Subgroup G2 := {
+  carrier := im φ
+  nonempty := by {
+    have h : MyGroup.one ∈ im φ := by {
       rw [im]
       simp
       use MyGroup.one
       rw [homomorphism_neutral_element_lemma]
     }
-    contrapose! h_e
-    apply Set.eq_empty_iff_forall_not_mem.mp at h_e
-    specialize h_e MyGroup.one
-    exact h_e
+    contrapose! h
+    rw [Set.eq_empty_iff_forall_not_mem] at h
+    apply h
   }
-
-  have h_mul_mem : ∀ a b : G2, (a ∈ im φ ∧ b ∈ im φ) → MyGroup.mul a b ∈ im φ := by {
+  mul_mem := by {
     rw [im]
     intros a b
     intro ⟨h_a, h_b⟩
@@ -1206,8 +1203,7 @@ theorem image_is_subgroup_lemma (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGrou
     rw [GroupHomomorphism.mul]
     rw [h_a, h_b]
   }
-
-  have h_inv_mem : ∀ a : G2, a ∈ im φ → MyGroup.inv a ∈ im φ := by {
+  inv_mem := by {
     rw [im]
     intro a
     intro h_a
@@ -1218,14 +1214,12 @@ theorem image_is_subgroup_lemma (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGrou
     rw [homomorphism_inverse_element_lemma]
     rw [h_a]
   }
+}
 
-  let H : Subgroup G2 := {
-    carrier := im φ
-    nonempty := h_nonempty
-    mul_mem := h_mul_mem
-    inv_mem := h_inv_mem
-  }
-  use H
+theorem image_is_subgroup_lemma (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGroup G2]
+(φ : GroupHomomorphism G1 G2) : ∃ H : Subgroup G2, H.carrier = im φ := by {
+  use image_to_subgroup φ
+  rw [image_to_subgroup]
 }
 
 
@@ -1449,20 +1443,18 @@ theorem right_coset_union_lemma (G : Type u) [MyGroup G] (H : Subgroup G) :
 
 
 -- theorem 2.1.16
-/-
-theorem coset_mul_welldefined_lemma (G : Type u) [MyGroup G] (H : normal_subgroup G) :
-∀ g1 g2 g1' g2': G,
-(left_coset G H g1 = left_coset G H g1' ∧
-left_coset G H g2 = left_coset G H g2') ->
-left_coset G H (MyGroup.mul g1 g2) = left_coset G H (MyGroup.mul g1' g2') := by {
-  intros g1 g2 g1' g2'
+theorem coset_mul_welldefined_lemma ( G : Type u) [MyGroup G] (H : normal_subgroup G)
+(a a' b b' : left_coset' G H) :
+a.carrier = a'.carrier ∧ b.carrier = b'.carrier ->
+(left_coset_mul a b).carrier = (left_coset_mul a' b').carrier := by {
   intro h
   obtain ⟨h1, h2⟩ := h
-  rw [left_coset_eq_lemma] at h1 h2
-  rw [left_coset_eq_lemma]
+  repeat rw [left_coset'.h_carrier] at h1 h2 ⊢
+  rw [left_coset_eq_lemma] at h1 h2 ⊢
+
   -- we use, that H is normal
-  have h : ∃ h : H.carrier, MyGroup.mul (MyGroup.mul (MyGroup.inv g1) g1') g2' =
-                  MyGroup.mul g2' h := by {
+  have h : ∃ h : H.carrier, MyGroup.mul (MyGroup.mul (MyGroup.inv a.g) a'.g) b'.g =
+                  MyGroup.mul b'.g h := by {
     have h_K : (∃ H' : normal_subgroup G, H'.carrier = H.carrier) := by {
       use H
     }
@@ -1474,13 +1466,13 @@ left_coset G H (MyGroup.mul g1 g2) = left_coset G H (MyGroup.mul g1' g2') := by 
       exact h
     }
     let g : H.carrier := by {
-      use (MyGroup.mul (MyGroup.inv g1) g1')
+      use (MyGroup.mul (MyGroup.inv a.g) a'.g)
       exact h1
     }
-    specialize h_normal g g2'
+    specialize h_normal g b'.g
 
     let gg : H.carrier := by {
-      use (MyGroup.mul (MyGroup.mul (MyGroup.inv g2') ↑g) g2')
+      use (MyGroup.mul (MyGroup.mul (MyGroup.inv b'.g) ↑g) b'.g)
     }
     use gg
     simp [gg]
@@ -1488,7 +1480,10 @@ left_coset G H (MyGroup.mul g1 g2) = left_coset G H (MyGroup.mul g1' g2') := by 
     rw [MyGroup.mul_inv, MyGroup.one_mul]
   }
 
+
   obtain ⟨h, h3⟩ := h
+  repeat rw [left_coset_mul]
+  simp
   rw [mul_inv_lemma]
   repeat rw [MyGroup.mul_assoc]
   nth_rewrite 2 [← MyGroup.mul_assoc]
@@ -1497,34 +1492,20 @@ left_coset G H (MyGroup.mul g1 g2) = left_coset G H (MyGroup.mul g1' g2') := by 
   apply Subgroup.mul_mem
   constructor
   apply h2
-
-  have : ↑h ∈ H.carrier := by {
-    simp
-  }
+  have : ↑h ∈ H.carrier := by simp
   apply this
 }
--/
 
-theorem coset_mul_welldefined_lemma ( G : Type u) [MyGroup G] (H : normal_subgroup G)
-(a a' b b' : left_coset' G H) :
-a.carrier = a'.carrier ∧ b.carrier = b'.carrier ->
-(left_coset_mul a b).carrier = (left_coset_mul a' b').carrier := by {
-  sorry
-}
 
 theorem coset_inv_welldefined_lemma (G : Type u) [MyGroup G] (H : normal_subgroup G)
 (a a' : left_coset' G H) :
 a.carrier = a'.carrier ->
 (left_coset_inv a).carrier = (left_coset_inv a').carrier := by {
   intro h
-  obtain ⟨g_a, carrier_a, h_carrier_a⟩ := a
-  obtain ⟨g_a', carrier_a', h_carrier_a'⟩ := a'
-  simp at h
   repeat rw [left_coset_inv]
   simp
+  -- the inverse element in a group is always welldefined
   sorry
-
-
 }
 
 
@@ -1593,3 +1574,6 @@ MyGroup (left_coset' G H) := {
     rw [this]
   }
 }
+
+
+-- Theorem 2.1.19 (difficult with cardinality)
