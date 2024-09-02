@@ -130,6 +130,19 @@ MyGroup.inv (MyGroup.inv a) = a := by {
 
 
 ----------------------------------------------------------------
+-- 1⁻¹ = 1
+theorem inv_one_lemma {G : Type u} [MyGroup G] :
+(MyGroup.inv MyGroup.one : G) = MyGroup.one := by {
+  have : (MyGroup.mul MyGroup.one MyGroup.one : G) =
+  MyGroup.mul (MyGroup.inv MyGroup.one) MyGroup.one := by {
+    rw [MyGroup.inv_mul, MyGroup.mul_one]
+  }
+  rw [← group_cancel_rule_right_lemma] at this
+  rw [← this]
+}
+
+
+----------------------------------------------------------------
 -- (a * b)⁻¹ = b⁻¹ * a⁻¹
 theorem mul_inv_lemma [MyGroup G] (a b : G) :
 MyGroup.inv (MyGroup.mul a b) = MyGroup.mul (MyGroup.inv b) (MyGroup.inv a) := by {
@@ -1220,6 +1233,75 @@ theorem image_is_subgroup_lemma (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGrou
 (φ : GroupHomomorphism G1 G2) : ∃ H : Subgroup G2, H.carrier = im φ := by {
   use image_to_subgroup φ
   rw [image_to_subgroup]
+}
+
+instance image_is_group {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
+(φ : GroupHomomorphism G1 G2) : MyGroup (im φ) := {
+  mul := λ x y => by {
+    rw [im] at x y
+    obtain ⟨x, h_x⟩ := x
+    obtain ⟨y, h_y⟩ := y
+    simp at h_x h_y
+    have : MyGroup.mul x y ∈ im φ := by {
+      rw [im]
+      simp
+      obtain ⟨g_x, h_x⟩ := h_x
+      obtain ⟨g_y, h_y⟩ := h_y
+      use MyGroup.mul g_x g_y
+      rw [GroupHomomorphism.mul]
+      rw [h_x, h_y]
+    }
+    exact ⟨MyGroup.mul x y, this⟩
+  }
+  one := by {
+    have : MyGroup.one ∈ im φ := by {
+      rw [im]
+      simp
+      use MyGroup.one
+      rw [homomorphism_neutral_element_lemma]
+    }
+    exact ⟨MyGroup.one, this⟩
+  }
+  inv := by {
+    intro x
+    obtain ⟨x, h_x⟩ := x
+    have : MyGroup.inv x ∈ im φ := by {
+      rw [im]
+      simp
+      rw [im] at h_x
+      simp at h_x
+      obtain ⟨g_x, h_x⟩ := h_x
+      use MyGroup.inv g_x
+      rw [homomorphism_inverse_element_lemma]
+      rw [h_x]
+    }
+    exact ⟨MyGroup.inv x, this⟩
+  }
+  mul_assoc := by {
+    intros x y z
+    simp
+    apply MyGroup.mul_assoc
+  }
+  one_mul := by {
+    simp
+    intros x _
+    apply MyGroup.one_mul
+  }
+  mul_one := by {
+    simp
+    intros x _
+    apply MyGroup.mul_one
+  }
+  inv_mul := by {
+    simp
+    intros x _
+    apply MyGroup.inv_mul
+  }
+  mul_inv := by {
+    simp
+    intros x _
+    apply MyGroup.mul_inv
+  }
 }
 
 
