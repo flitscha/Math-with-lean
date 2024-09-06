@@ -138,3 +138,8 @@ theorem quotient_isomorphism_lemma (G1 : Type u) (G2 : Type v)
   }
   use ψ4
 }
+
+theorem cyclic_group_isomorphic_to_Z {G : Type u} [MyGroup G] (g : G)
+(C : Subgroup G) (h_c : C = cyclic_group G g) :
+∃ n : ℤ, quotient_is_isomorphic_to ℤ (nZ n) ↑C := by {
+}

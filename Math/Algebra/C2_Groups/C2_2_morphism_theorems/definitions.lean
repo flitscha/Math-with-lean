@@ -33,6 +33,11 @@ structure quotient_isomorphism (G1 : Type u) [MyGroup G1] (H : normal_subgroup G
   injective' : quotient_is_injective toGroupHomomorphism
   surjective : Function.Surjective f
 
+-- G1/H is isomorphic to G2
+def quotient_is_isomorphic_to (G1 : Type u) [MyGroup G1] (H : normal_subgroup G1)
+(G2 : Type v) [MyGroup G2] : Prop :=
+  ∃ φ : quotient_isomorphism G1 H G2, true
+
 
 def list_prod {G : Type u} [MyGroup G] : List G -> G
 | [] => MyGroup.one
@@ -74,6 +79,18 @@ list_prod (list_inv l) = MyGroup.inv (list_prod l) := by {
 }
 
 
+theorem list_inv_of_merged_list {G : Type u} [MyGroup G] (l1 : List G) (l2 : List G) :
+list_inv (l1 ++ l2) = (list_inv l2) ++ (list_inv l1) := by {
+  cases l1
+  case nil =>
+    simp [list_inv]
+  case cons x xs =>
+    simp [list_inv]
+    rw [list_inv_of_merged_list]
+    simp
+}
+
+
 theorem list_inv_inv {G : Type u} [MyGroup G] (l : List G) :
 list_inv (list_inv l) = l := by {
   cases l
@@ -81,14 +98,31 @@ list_inv (list_inv l) = l := by {
     simp [list_inv]
   case cons x xs =>
     simp [list_inv]
-
-  sorry
+    rw [list_inv_of_merged_list]
+    simp [list_inv]
+    constructor
+    rw [double_inv_lemma]
+    apply list_inv_inv
 }
 
 
 theorem list_inv_mem {G : Type u} [MyGroup G] (l : List G) (g : G) :
 g ∈ l -> MyGroup.inv g ∈ (list_inv l) := by {
-  sorry
+  intro h
+  cases l
+  case nil =>
+    simp at h
+  case cons x xs =>
+    simp [list_inv]
+    simp at h
+    cases h
+    case inl h =>
+      right
+      rw [h]
+    case inr h =>
+      left
+      apply list_inv_mem
+      exact h
 }
 
 
@@ -157,3 +191,8 @@ def generated_group (G : Type u) [MyGroup G] (A : Set G) : Subgroup G := {
     rw [h2]
   }
 }
+
+
+-- cyclic groups: a generated group, where the generator-set has only one element
+def cyclic_group (G : Type u) [MyGroup G] (g : G) : Subgroup G :=
+  generated_group G {g}

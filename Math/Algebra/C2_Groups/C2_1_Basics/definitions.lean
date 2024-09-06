@@ -1,6 +1,7 @@
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Real.Basic
 
+
 class MyGroup (G : Type u) where
   mul : G → G → G
   one : G
@@ -16,6 +17,11 @@ class AbelianGroup (G : Type u) extends MyGroup G where
   mul_comm : ∀ a b : G, mul a b = mul b a
 
 
+def group_pow {G : Type u} [MyGroup G] (g : G) : ℕ → G
+| 0       => MyGroup.one
+| (n + 1) => MyGroup.mul (group_pow g n) g
+
+
 structure Subgroup (G : Type u) [MyGroup G] where
   carrier : Set G -- this is a subset of G. (the subgroup)
   nonempty : carrier ≠ ∅
@@ -23,7 +29,7 @@ structure Subgroup (G : Type u) [MyGroup G] where
   inv_mem : ∀ a : G, a ∈ carrier → MyGroup.inv a ∈ carrier
 
 
--- proof, that a Subgroup is a group
+
 def SubgroupToGroup {G : Type u} [MyGroup G] (H : Subgroup G) : MyGroup H.carrier := {
   mul := by {
     intros a b
@@ -106,6 +112,9 @@ def SubgroupToGroup {G : Type u} [MyGroup G] (H : Subgroup G) : MyGroup H.carrie
     apply h
   }
 }
+
+structure AbelianSubgroup (G : Type u) [MyGroup G] extends Subgroup G where
+  mul_comm : ∀ a b : carrier, MyGroup.mul (a : G) b = MyGroup.mul (b : G) a
 
 class GroupHomomorphism (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGroup G2] :=
   f : G1 -> G2

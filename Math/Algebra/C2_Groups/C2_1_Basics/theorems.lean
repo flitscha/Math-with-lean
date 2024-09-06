@@ -3,6 +3,75 @@ import Mathlib.Tactic.Ring
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finset.Basic
 
+
+-- subgroup is a group
+instance {G : Type u} [MyGroup G] (H : Subgroup G) : MyGroup H.carrier where
+  mul := by {
+    intros a b
+    have : MyGroup.mul (a : G) b ∈ H.carrier := by {
+      apply Subgroup.mul_mem
+      simp
+    }
+    exact ⟨MyGroup.mul a b, this⟩
+  }
+  one := by {
+    have : MyGroup.one ∈ H.carrier := by {
+      have h_empty : H.carrier ≠ ∅ := by {
+        apply Subgroup.nonempty
+      }
+      have h_g : ∃ g : G, g ∈ H.carrier := by {
+        contrapose! h_empty
+        rw [Set.eq_empty_iff_forall_not_mem]
+        exact h_empty
+      }
+      obtain ⟨g, h_g⟩ := h_g
+      have h_g_inv : MyGroup.inv g ∈ H.carrier := by {
+        apply Subgroup.inv_mem
+        exact h_g
+      }
+      have h_g_g_inv : MyGroup.mul (MyGroup.inv g) g ∈ H.carrier := by {
+        apply Subgroup.mul_mem
+        exact ⟨h_g_inv, h_g⟩
+      }
+      rw [MyGroup.inv_mul] at h_g_g_inv
+      exact h_g_g_inv
+    }
+    exact ⟨MyGroup.one, this⟩
+  }
+  inv := by {
+    intro a
+    have : MyGroup.inv (a : G) ∈ H.carrier := by {
+      apply Subgroup.inv_mem
+      simp
+    }
+    exact ⟨MyGroup.inv a, this⟩
+  }
+  mul_assoc := by {
+    intros a b c
+    simp
+    apply MyGroup.mul_assoc
+  }
+  one_mul := by {
+    simp
+    intros a _
+    apply MyGroup.one_mul
+  }
+  mul_one := by {
+    simp
+    intros a _
+    apply MyGroup.mul_one
+  }
+  inv_mul := by {
+    simp
+    intros a _
+    apply MyGroup.inv_mul
+  }
+  mul_inv := by {
+    simp
+    intros a _
+    apply MyGroup.mul_inv
+  }
+
 ----------------------------------------------------------------
 -- (ℤ, +) is a group
 instance : MyGroup ℤ where
@@ -22,6 +91,8 @@ instance : MyGroup ℤ where
     have h : a + (-a) = 0 := by simp
     exact h
   }
+
+
 
 ----------------------------------------------------------------
 -- Lemma: the neutral element is unique
@@ -288,11 +359,70 @@ theorem nat_minimum_lemma (S : Set ℕ) (h_nonempty : S ≠ ∅) :
 }
 
 
+----------------------------------------------------------------
+-- define nZ as a normal subgroup of Z
+def nZ (n : ℤ) : normal_subgroup ℤ := {
+  carrier := { x | ∃ z : ℤ, x = n*z }
+  nonempty := by {
+    have : 0 ∈ {x | ∃ z, x = n * z} := by {
+      simp
+    }
+    contrapose! this
+    rw [Set.eq_empty_iff_forall_not_mem] at this
+    apply this
+  }
+  mul_mem := by {
+    intros a b
+    intro h
+    simp [MyGroup.mul]
+    simp at h
+    obtain ⟨h1, h2⟩ := h
+    obtain ⟨z1, h1⟩ := h1
+    obtain ⟨z2, h2⟩ := h2
+    rw [h1, h2]
+    use z1+z2
+    ring
+  }
+  inv_mem := by {
+    intro a
+    simp [MyGroup.inv]
+    intro x h
+    rw [h]
+    use x.neg
+    have : -(n*x) = n*(-x) := by simp
+    apply this
+  }
+  normal := by {
+    simp [left_coset, right_coset]
+    intro g
+    simp [MyGroup.mul]
+    ext x
+    simp
+    constructor
+    intro h
+    obtain ⟨a, h1, h2⟩ := h
+    obtain ⟨z, h1⟩ := h1
+    use a
+    constructor
+    use z
+    rw [Int.add_comm]
+    exact h2
+    intro h
+    obtain ⟨a, h1, h2⟩ := h
+    obtain ⟨z, h1⟩ := h1
+    use a
+    constructor
+    use z
+    rw [Int.add_comm]
+    rw [h2]
+  }
+}
+
 --------------------------------------------------------------
 -- Lemma 2.1.5:
 -- every subgroup of ℤ looks like this for a n ∈ ℤ: {n*z | z ∈ Z}
 theorem lemma_2_1_5 (H : Subgroup ℤ) :
-∃ n : ℤ, H.carrier = { x : ℤ | ∃ z : ℤ, x = n*z } := by {
+∃ n : ℤ, H = nZ n := by {
   -- first we prove, that 0 ∈ H.carrier
   have h_0 : 0 ∈ H.carrier := by {
     -- H is a subgroup -> H ≠ ∅
@@ -323,8 +453,12 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
   by_cases h_case : H.carrier = {0}
   -- trivial case: H = {0}
   case pos =>
-    rw [h_case]
+    obtain ⟨carrier, _⟩ := H
     use 0
+    simp [normal_sg_to_sg]
+    simp at h_case
+    rw [h_case]
+    rw [nZ]
     simp
 
   case neg =>
@@ -399,10 +533,14 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
     -- we use the minimum
     obtain ⟨n, h_min⟩ := h_min
     use n
+    obtain ⟨carrier, _, mul_mem, inv_mem⟩ := H
+    simp at h_0 h_case h_min
+    simp [normal_sg_to_sg]
     ext x
     constructor
     -- H ⊆ n*ℤ
     intro h_x
+    rw [nZ]
     simp
     have h1 : ∃ a b : ℤ, |b| < |n| ∧ x = n*a + b := by {
       obtain ⟨_, h_tmp2, _⟩ := h_min
@@ -418,14 +556,14 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
     }
     obtain ⟨a, b, h1, h2⟩ := h1
 
-    have h3 : b ∈ H.carrier := by {
+    have h3 : b ∈ carrier := by {
       have h_tmp : b = x - n*a := by {
         rw [h2]
         simp
       }
       rw [h_tmp]
       rw [sub_eq_add_neg]
-      apply Subgroup.mul_mem
+      apply mul_mem
       constructor
       exact h_x
       clear h2
@@ -444,10 +582,10 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
             ring
           }
           rw [this]
-          apply Subgroup.mul_mem
+          apply mul_mem
           constructor
           exact h_a
-          apply Subgroup.inv_mem
+          apply inv_mem
           exact h
       case a.right.intro.negSucc a =>
         rw [Int.negSucc_coe]
@@ -461,7 +599,7 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
             ring
           }
           rw [this]
-          apply Subgroup.mul_mem
+          apply mul_mem
           constructor
           exact h_a
           exact h
@@ -480,7 +618,6 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
       simp at h2
       exact h2
     }
-
     use a
 
     -- n*ℤ ⊆ H
@@ -504,7 +641,7 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
           simp
         }
         rw [h_tmp]
-        apply Subgroup.mul_mem
+        apply mul_mem
         constructor
         exact h_z
         exact h_nH
@@ -514,7 +651,7 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
       induction z
       case zero =>
         simp
-        apply Subgroup.inv_mem
+        apply inv_mem
         exact h_nH
       case succ z' h_z =>
         rw [Int.negSucc_coe] at h_z
@@ -525,10 +662,10 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
         }
         rw [h_tmp]
         rw [Int.sub_eq_add_neg]
-        apply Subgroup.mul_mem
+        apply mul_mem
         constructor
         exact h_z
-        apply Subgroup.inv_mem
+        apply inv_mem
         exact h_nH
 }
 
