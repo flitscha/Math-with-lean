@@ -63,11 +63,12 @@ quotient_is_injective (quotient_homomorphism φ) := by {
   rw [MyGroup.inv_mul]
 }
 
+
 -- G/ker(φ) is isomorphic to im(φ)
 -- also here, the definition of G/H is a problem
-theorem quotient_isomorphism_lemma (G1 : Type u) (G2 : Type v)
-[MyGroup G1] [MyGroup G2] (H : Subgroup G2) (φ : GroupHomomorphism G1 G2) :
-∃ ψ : quotient_isomorphism G1 (ker_to_normal_subgroup φ) (im φ), true := by {
+theorem quotient_isomorphism_lemma {G1 : Type u} {G2 : Type v}
+[MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
+quotient_is_isomorphic_to G1 (ker_to_normal_subgroup φ) (image_to_subgroup φ).carrier := by {
 
   let ψ2 : GroupHomomorphism (left_coset' G1 (ker_to_normal_subgroup φ)) G2 := quotient_homomorphism φ
   have h : im ψ2 = im φ := by {
@@ -136,10 +137,195 @@ theorem quotient_isomorphism_lemma (G1 : Type u) (G2 : Type v)
       rw [h_a]
     }
   }
+
+  rw [quotient_is_isomorphic_to]
   use ψ4
 }
 
+
+/-
+theorem quotient_isomorphism_lemma {G1 : Type u} {G2 : Type v} {IM : Type v}
+[MyGroup G1] [MyGroup G2] [MyGroup IM] (φ : GroupHomomorphism G1 G2) (h_IM : im φ = IM) :
+--quotient_is_isomorphic_to G1 (ker_to_normal_subgroup φ) (image_to_subgroup φ).carrier := by {
+quotient_is_isomorphic_to G1 (ker_to_normal_subgroup φ) IM := by {
+--∃ ψ : quotient_isomorphism G1 (ker_to_normal_subgroup φ) (im φ), true := by {
+
+  let ψ2 : GroupHomomorphism (left_coset' G1 (ker_to_normal_subgroup φ)) G2 := quotient_homomorphism φ
+  have h : im ψ2 = im φ := by {
+    simp [ψ2]
+    rw [quotient_homomorphism]
+    simp [im]
+    ext x
+    constructor
+    simp
+    intro c h
+    obtain ⟨g_c, _⟩ := c
+    use g_c
+    simp
+    intros g h
+    let g_1 : left_coset' G1 (ker_to_normal_subgroup φ) := {
+      g := g
+      carrier := left_coset G1 (ker_to_normal_subgroup φ) g
+      h_carrier := by simp
+    }
+    use g_1
+  }
+
+  have h : IM = ↑(image_to_subgroup φ).carrier := by {
+    sorry
+  }
+  rw [h]
+
+  let ψ3 : GroupHomomorphism (left_coset' G1 (ker_to_normal_subgroup φ)) IM := {
+    f := λ x => by {
+      rw [← h_IM]
+      use ψ2.f x
+      rw [← h]
+      rw [im]
+      simp
+    }
+    mul := by {
+      simp
+      --intros a b
+      --simp [GroupHomomorphism.f, MyGroup.mul]
+      }
+      rw [h]
+
+      apply GroupHomomorphism.mul
+    }
+  }
+  let ψ4 : quotient_isomorphism G1 (ker_to_normal_subgroup φ) ↑(im φ) := {
+    toGroupHomomorphism := ψ3
+    injective' := by {
+      have : quotient_is_injective (quotient_homomorphism φ) := by {
+        apply quotient_homomorphism_injective_lemma
+      }
+      simp [ψ3, ψ2]
+      rw [quotient_is_injective]
+      rw [GroupHomomorphism.f]
+      simp
+      apply this
+    }
+    surjective := by {
+      rw [Function.Surjective]
+      simp
+      intros a h_a
+      rw [GroupHomomorphism.f]
+      simp [ψ3]
+      rw [GroupHomomorphism.f]
+      simp [ψ2, quotient_homomorphism]
+      simp [im] at h_a
+      obtain ⟨g_a, h_a⟩ := h_a
+      let a_1 : left_coset' G1 (ker_to_normal_subgroup φ) := {
+        g := g_a
+        carrier := left_coset G1 (ker_to_normal_subgroup φ) g_a
+        h_carrier := by simp
+      }
+      use a_1
+      rw [h_a]
+    }
+  }
+
+  let ψ5 : quotient_isomorphism G1 (ker_to_normal_subgroup φ) IM := {
+    toGroupHomomorphism := {
+      f := λ x => by {
+        rw [← h_IM]
+        use ψ3.f x
+        simp
+      }
+      mul := by {
+        intros a b
+
+      }
+    }
+    injective' := by {
+
+    }
+  }
+  rw [quotient_is_isomorphic_to]
+  use ψ5
+}
+-/
+
+
 theorem cyclic_group_isomorphic_to_Z {G : Type u} [MyGroup G] (g : G)
 (C : Subgroup G) (h_c : C = cyclic_group G g) :
-∃ n : ℤ, quotient_is_isomorphic_to ℤ (nZ n) ↑C := by {
+∃ n : ℤ, quotient_is_isomorphic_to ℤ (nZ n) C.carrier := by {
+
+  let φ : GroupHomomorphism ℤ G := {
+    f := λ z => group_pow g z
+    mul := by {
+      intros a b
+      simp [MyGroup.mul]
+      rw [pow_sum_lemma]
+    }
+  }
+
+  -- im(φ) = ⟨g⟩
+  have h_im : (image_to_subgroup φ).carrier = C.carrier := by {
+    rw [image_to_subgroup]
+    simp
+    rw [im]
+    simp [GroupHomomorphism.f]
+    rw [← cyclic_group_carrier_lemma]
+    rw [h_c]
+  }
+
+  -- ker(φ) = nZ (because every subgroup of Z is nZ)
+  have h_ker' : ∃ n : ℤ, ker_to_normal_subgroup φ = normal_sg_to_sg (nZ n) := by {
+    apply lemma_2_1_5
+  }
+  obtain ⟨n, h_ker'⟩ := h_ker'
+
+  have h_ker : (nZ n) = ker_to_normal_subgroup φ := by {
+    rw [ker_to_normal_subgroup]
+    rw [nZ]
+    simp
+    simp [normal_sg_to_sg] at h_ker'
+    simp [ker_to_normal_subgroup, nZ] at h_ker'
+    symm
+    apply h_ker'
+  }
+  clear h_ker'
+
+  use n
+  have : quotient_is_isomorphic_to ℤ (ker_to_normal_subgroup φ) (image_to_subgroup φ).carrier := by {
+    apply quotient_isomorphism_lemma
+  }
+
+  symm at h_im
+  rw [← h_ker] at this
+  have hhhh : C = image_to_subgroup φ := by {
+    obtain ⟨c_carrier, c_nonempty, c_mul_mem, c_inv_mem⟩ := C
+    rw [image_to_subgroup]
+    simp at h_im ⊢
+    rw [image_to_subgroup] at h_im
+    simp at h_im
+    exact h_im
+  }
+
+  rw [← hhhh] at this
+  exact this
+}
+
+
+
+theorem isomorphism_theorem_1_i {G : Type u} [MyGroup G] (H : Subgroup G)
+(N : normal_subgroup G) :
+∃ S : Subgroup G, S.carrier =
+{ x | ∃ h n : G, h ∈ H.carrier ∧ n ∈ N.carrier ∧ x = MyGroup.mul h n } := by {
+  let HN : Set G := { x | ∃ h n : G, h ∈ H.carrier ∧ n ∈ N.carrier ∧ x = MyGroup.mul h n }
+
+  -- HN is not empty:
+  have h_nonempty : HN ≠ ∅ := by {
+    simp [HN]
+    rw [Set.eq_empty_iff_forall_not_mem]
+    simp
+    use MyGroup.one, MyGroup.one
+    constructor
+
+
+
+  }
+  sorry
 }

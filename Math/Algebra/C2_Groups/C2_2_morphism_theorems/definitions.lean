@@ -196,3 +196,97 @@ def generated_group (G : Type u) [MyGroup G] (A : Set G) : Subgroup G := {
 -- cyclic groups: a generated group, where the generator-set has only one element
 def cyclic_group (G : Type u) [MyGroup G] (g : G) : Subgroup G :=
   generated_group G {g}
+
+
+theorem cyclic_group_carrier_lemma (G : Type u) [MyGroup G] (g : G) :
+(cyclic_group G g).carrier = { x | ∃ z : ℤ, x = group_pow g z } := by {
+  ext x
+  simp
+  constructor
+  intro h
+  simp [cyclic_group, generated_group] at h
+  obtain ⟨l, h1, h2⟩ := h
+  rw [← h2]
+  clear h2
+  induction l
+  case nil =>
+    simp [list_prod]
+    use 0
+    simp [group_pow, group_pow_nat]
+  case cons y ys h_ys =>
+    rw [list_prod]
+    simp at h1
+    obtain ⟨h1_1, h1_2⟩ := h1
+    have : ∃ z : ℤ, list_prod ys = group_pow g z := by {
+      apply h_ys
+      exact h1_2
+    }
+    clear h_ys
+    obtain ⟨z_ys, h_ys⟩ := this
+    cases h1_1
+    case inl h =>
+      use z_ys+1
+      rw [h_ys]
+      rw [pow_add_one_lemma]
+      rw [h]
+      rw [pow_comm_aux]
+    case inr h =>
+      use z_ys-1
+      rw [sub_eq_add_neg]
+      rw [pow_sum_lemma]
+      rw [h_ys]
+      rw [pow_comm_lemma]
+      have : (group_pow g (-1)) = y := by {
+        have : -1 = Int.negSucc 0 := by simp
+        rw [this]
+        simp [group_pow, group_pow_nat]
+        rw [MyGroup.mul_one]
+        rw [← h]
+        rw [double_inv_lemma]
+      }
+      rw [this]
+
+  -- ⊆
+  intro h
+  obtain ⟨z, h⟩ := h
+  rw [cyclic_group, generated_group]
+  simp
+  cases z
+  case ofNat n =>
+    use List.replicate n g
+    simp
+    rw [h]
+    clear h
+    induction n
+    case zero =>
+      simp [list_prod]
+      simp [group_pow, group_pow_nat]
+    case succ n' h_n =>
+      simp [list_prod]
+      rw [h_n]
+      norm_cast
+  case negSucc n' =>
+    use List.replicate (n'+1) (MyGroup.inv g)
+    simp
+    constructor
+    right
+    rw [double_inv_lemma]
+    rw [h]
+    clear h
+    induction n'
+    case zero =>
+      simp [list_prod]
+      rw [MyGroup.mul_one]
+      have : (-1) = Int.negSucc 0 := by simp
+      rw [this]
+      simp [group_pow, group_pow_nat]
+      rw [MyGroup.mul_one]
+    case succ n'' h_n =>
+      rw [List.replicate, list_prod]
+      rw [h_n]
+      clear h_n
+
+      simp [Int.negSucc_eq]
+      nth_rewrite 2 [pow_sum_lemma]
+      rw [pow_neg_one_eq_inv]
+}

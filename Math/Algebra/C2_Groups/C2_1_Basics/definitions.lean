@@ -17,9 +17,14 @@ class AbelianGroup (G : Type u) extends MyGroup G where
   mul_comm : ∀ a b : G, mul a b = mul b a
 
 
-def group_pow {G : Type u} [MyGroup G] (g : G) : ℕ → G
+def group_pow_nat {G : Type u} [MyGroup G] (g : G) : ℕ → G
 | 0       => MyGroup.one
-| (n + 1) => MyGroup.mul (group_pow g n) g
+| (n + 1) => MyGroup.mul g (group_pow_nat g n)
+
+
+def group_pow {G : Type u} [MyGroup G] (g : G) : ℤ → G
+| Int.ofNat n => group_pow_nat g n
+| Int.negSucc n' => MyGroup.inv (group_pow_nat g (n' + 1))
 
 
 structure Subgroup (G : Type u) [MyGroup G] where
