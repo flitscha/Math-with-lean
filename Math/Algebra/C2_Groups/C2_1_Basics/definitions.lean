@@ -2,7 +2,7 @@ import Mathlib.Data.Set.Basic
 import Mathlib.Data.Real.Basic
 
 
-class MyGroup (G : Type u) where
+class MyGroup (G : Type) where
   mul : G → G → G
   one : G
   inv : G → G
@@ -13,29 +13,43 @@ class MyGroup (G : Type u) where
   mul_inv : ∀ a : G, mul a (inv a) = one
 
 
-class AbelianGroup (G : Type u) extends MyGroup G where
+class AbelianGroup (G : Type) extends MyGroup G where
   mul_comm : ∀ a b : G, mul a b = mul b a
 
 
-def group_pow_nat {G : Type u} [MyGroup G] (g : G) : ℕ → G
+def group_pow_nat {G : Type} [MyGroup G] (g : G) : ℕ → G
 | 0       => MyGroup.one
 | (n + 1) => MyGroup.mul g (group_pow_nat g n)
 
 
-def group_pow {G : Type u} [MyGroup G] (g : G) : ℤ → G
+def group_pow {G : Type} [MyGroup G] (g : G) : ℤ → G
 | Int.ofNat n => group_pow_nat g n
 | Int.negSucc n' => MyGroup.inv (group_pow_nat g (n' + 1))
 
 
-structure Subgroup (G : Type u) [MyGroup G] where
+structure Subgroup (G : Type) [MyGroup G] where
   carrier : Set G -- this is a subset of G. (the subgroup)
   nonempty : carrier ≠ ∅
   mul_mem : ∀ a b : G, (a ∈ carrier ∧ b ∈ carrier) → MyGroup.mul a b ∈ carrier
   inv_mem : ∀ a : G, a ∈ carrier → MyGroup.inv a ∈ carrier
 
+def Subgroup.toType [MyGroup G] (H : Subgroup G) : Type :=
+  { x // x ∈ H.carrier }
+/-
+structure SubgroupOfSubgroup {G : Type} [MyGroup G] (H : Subgroup G) extends Subgroup G where
+  h_carrier : carrier ⊆ H.carrier
 
+def SoS_to_S {G : Type} [MyGroup G] (H : Subgroup G) :
+SubgroupOfSubgroup H -> Subgroup G := by {
+  intro h
+  exact h.toSubgroup
+}-/
 
-def SubgroupToGroup {G : Type u} [MyGroup G] (H : Subgroup G) : MyGroup H.carrier := {
+--instance {G : Type} [MyGroup G] : Coe (Subgroup G) (Set G) := {
+--  coe := λ h => h.carrier
+--}
+
+def SubgroupToGroup {G : Type} [MyGroup G] (H : Subgroup G) : MyGroup H.carrier := {
   mul := by {
     intros a b
     have h : ↑(MyGroup.mul ↑a ↑b) ∈ ↑H.carrier := by {
@@ -118,98 +132,58 @@ def SubgroupToGroup {G : Type u} [MyGroup G] (H : Subgroup G) : MyGroup H.carrie
   }
 }
 
-structure AbelianSubgroup (G : Type u) [MyGroup G] extends Subgroup G where
+structure AbelianSubgroup (G : Type) [MyGroup G] extends Subgroup G where
   mul_comm : ∀ a b : carrier, MyGroup.mul (a : G) b = MyGroup.mul (b : G) a
 
-class GroupHomomorphism (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGroup G2] :=
+class GroupHomomorphism (G1 : Type) (G2 : Type) [MyGroup G1] [MyGroup G2] :=
   f : G1 -> G2
   mul : ∀ a b : G1, f (MyGroup.mul a b) = MyGroup.mul (f a) (f b)
 
-structure GroupIsomorphism (G1 : Type u) (G2 : Type v) [MyGroup G1]
+structure GroupIsomorphism (G1 : Type) (G2 : Type) [MyGroup G1]
 [MyGroup G2] extends GroupHomomorphism G1 G2 :=
   (injective : Function.Injective f)
   (surjective : Function.Surjective f)
 
 -- proof, that a group isomorphism is a group homomorphism
-def isomorphismToHomomorphism {G1 : Type u} {G2 : Type v}
+def isomorphismToHomomorphism {G1 : Type} {G2 : Type}
 [MyGroup G1] [MyGroup G2] (ψ : GroupIsomorphism G1 G2) : GroupHomomorphism G1 G2 := {
   f := ψ.f
   mul := ψ.mul
 }
 
-instance coeIsomorphismToHomomorphism {G1 : Type u} {G2 : Type v}
+instance coeIsomorphismToHomomorphism {G1 : Type} {G2 : Type}
 [MyGroup G1] [MyGroup G2] :
 Coe (GroupIsomorphism G1 G2) (GroupHomomorphism G1 G2) := {
   coe := isomorphismToHomomorphism
 }
 
 
-/-
---def idGroupMorphism (G : Type u) [MyGroup G] : G → G := id
-
-structure idGroupMorphism (G : Type u) [MyGroup G] extends GroupHomomorphism G G :=
-  identity : f = id
-
-def idToHomomorphism (G : Type u) [MyGroup G] : GroupHomomorphism G G := {
-  f := id
-  mul := by {
-    intros a b
-    have h : id (MyGroup.mul a b) = MyGroup.mul (id a) (id b) := by {
-      simp
-    }
-    apply h
-  }
-}
-
-/-
--- proof, that the identity morphism is a homomorphism
-def idToHomomorphism {G : Type u} [MyGroup G]
-(ψ : idGroupMorphism G) : GroupHomomorphism G G := {
-  f := ψ.f
-  mul := by {
-    intros a b
-    have h : ψ.f (MyGroup.mul a b) = MyGroup.mul (ψ.f a) (ψ.f b) := by {
-      repeat rw [ψ.identity]
-    }
-    apply h
-  }
-}-/
-
-instance coeIdToHomomorphism {G : Type u} [MyGroup G] :
-Coe (idGroupMorphism G) (GroupHomomorphism G G) := {
-  coe := by {
-    intro
-    exact idToHomomorphism G
-  }
-}
--/
-
 -- two groups are called isomorphic, iff there exists a group-isomorphism between the two groups
-def groupsAreIsomorphic (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGroup G2] : Prop :=
+def groupsAreIsomorphic (G1 : Type) (G2 : Type) [MyGroup G1] [MyGroup G2] : Prop :=
   ∃ _ : GroupIsomorphism G1 G2, true
 
 
 -- left coset = linke Nebenklasse
-def left_coset (G : Type u) [MyGroup G] (H : Subgroup G) (g : G) : Set G :=
+def left_coset (G : Type) [MyGroup G] (H : Subgroup G) (g : G) : Set G :=
   { x | ∃ h : H.carrier, x = MyGroup.mul g ↑h }
 
 -- right coset = rechte Nebenklasse
-def right_coset (G : Type u) [MyGroup G] (H : Subgroup G) (g : G) : Set G :=
+def right_coset (G : Type) [MyGroup G] (H : Subgroup G) (g : G) : Set G :=
   { x | ∃ h : H.carrier, x = MyGroup.mul ↑h g }
 
 -- Set of all cosets
-def all_left_cosets (G : Type u) [MyGroup G] (H : Subgroup G) : Set (Set G) :=
+def all_left_cosets (G : Type) [MyGroup G] (H : Subgroup G) : Set (Set G) :=
   { x | ∃ g : G, x = left_coset G H g }
 
-def all_right_cosets (G : Type u) [MyGroup G] (H : Subgroup G) : Set (Set G) :=
+def all_right_cosets (G : Type) [MyGroup G] (H : Subgroup G) : Set (Set G) :=
   { x | ∃ g : G, x = right_coset G H g }
 
 -- normal subgroup: gH = Hg   ∀ g ∈ G
-structure normal_subgroup (G : Type u) [MyGroup G] extends Subgroup G where
+structure normal_subgroup (G : Type) [MyGroup G] extends Subgroup G where
   normal : ∀ g : G, left_coset G toSubgroup g = right_coset G toSubgroup g
 
 -- normal subgroup is a subgroup
-def normal_sg_to_sg {G : Type u} [MyGroup G] (H : normal_subgroup G) :
+def normal_sg_to_sg {G : Type} [MyGroup G] (H : normal_subgroup G) :
 Subgroup G := {
   carrier := H.carrier
   nonempty := H.nonempty
@@ -217,22 +191,22 @@ Subgroup G := {
   inv_mem := H.inv_mem
 }
 
-instance coe_normal_subgroup_to_subgroup {G : Type u} [MyGroup G] :
+instance coe_normal_subgroup_to_subgroup {G : Type} [MyGroup G] :
 Coe (normal_subgroup G) (Subgroup G) := {
   coe := normal_sg_to_sg
 }
 
 -- kernel of homomorphism
-def ker {G : Type u} {H : Type v} [MyGroup G] [MyGroup H]
+def ker {G : Type} {H : Type} [MyGroup G] [MyGroup H]
 (φ : GroupHomomorphism G H) : Set G := { g | φ.f g = MyGroup.one }
 
 -- image of homomorphism
-def im {G : Type u} {H : Type v} [MyGroup G] [MyGroup H]
+def im {G H: Type} [MyGroup G] [MyGroup H]
 (φ : GroupHomomorphism G H) : Set H := { h | ∃ g : G, h = φ.f g }
 
 
 -- two sets have the same cardinality iff there exists a bijection
-def same_cardinality {m1 : Type u} {m2 : Type v}
+def same_cardinality {m1 : Type} {m2 : Type}
 (M1 : Set m1) (M2 : Set m2) : Prop :=
   ∃ φ : M1 -> M2, Function.Bijective φ
 
@@ -243,12 +217,12 @@ def same_cardinality {m1 : Type u} {m2 : Type v}
 
 -- we want to show, that the set of all left cosets is a group.
 -- We define this structs, to make is easier
-structure left_coset' (G : Type u) [MyGroup G] (H : Subgroup G) :=
+structure left_coset' (G : Type) [MyGroup G] (H : Subgroup G) :=
   g : G
   carrier : Set G
   h_carrier : carrier = left_coset G H g
 
-def left_coset_mul {G : Type u} [MyGroup G] {H : normal_subgroup G}
+def left_coset_mul {G : Type} [MyGroup G] {H : normal_subgroup G}
 (A B : left_coset' G H) : left_coset' G H := by {
   obtain ⟨g_a, _⟩ := A
   obtain ⟨g_b, _⟩ := B
@@ -259,7 +233,7 @@ def left_coset_mul {G : Type u} [MyGroup G] {H : normal_subgroup G}
   }
 }
 
-def left_coset_one {G : Type u} [MyGroup G] {H : normal_subgroup G} :
+def left_coset_one {G : Type} [MyGroup G] {H : normal_subgroup G} :
 left_coset' G H := by {
   exact {
     g := MyGroup.one
@@ -268,7 +242,7 @@ left_coset' G H := by {
   }
 }
 
-def left_coset_inv {G : Type u} [MyGroup G] {H : normal_subgroup G}
+def left_coset_inv {G : Type} [MyGroup G] {H : normal_subgroup G}
 (A : left_coset' G H) : left_coset' G H := by {
   obtain ⟨g_a, _⟩ := A
   exact {

@@ -5,7 +5,7 @@ import Mathlib.Data.Finset.Basic
 
 
 -- subgroup is a group
-instance {G : Type u} [MyGroup G] (H : Subgroup G) : MyGroup H.carrier where
+instance {G : Type} [MyGroup G] (H : Subgroup G) : MyGroup (H.carrier : Type) where
   mul := by {
     intros a b
     have : MyGroup.mul (a : G) b ∈ H.carrier := by {
@@ -96,9 +96,9 @@ instance : MyGroup ℤ where
 
 ----------------------------------------------------------------
 -- Lemma: the neutral element is unique
--- it is already defined as unique in the group structure
+-- it is already defined as unique in the group str ucture
 -- but still: here a standard-proof:
-theorem neutral_element_unique_lemma [MyGroup G] (e e' : G)
+theorem neutral_element_unique_lemma {G : Type} [MyGroup G] (e e' : G)
 (h_e : e = MyGroup.one) (h_e' : e' = MyGroup.one) : e = e' := by {
   have h1 : MyGroup.mul e e' = e := by {
     rw [h_e']
@@ -115,7 +115,7 @@ theorem neutral_element_unique_lemma [MyGroup G] (e e' : G)
 
 --------------------------------------------------------------
 -- in groups, we can do this: a = b ↔ a+x = b+x
-theorem group_cancel_rule_right_lemma (G : Type u) [MyGroup G] (x a b : G) :
+theorem group_cancel_rule_right_lemma (G : Type) [MyGroup G] (x a b : G) :
 a = b ↔ MyGroup.mul a x = MyGroup.mul b x := by {
   -- ->
   have h1 : a = b -> MyGroup.mul a x = MyGroup.mul b x := by {
@@ -138,7 +138,7 @@ a = b ↔ MyGroup.mul a x = MyGroup.mul b x := by {
   exact h2
 }
 
-theorem group_cancel_rule_left_lemma (G : Type u) [MyGroup G] (x a b : G) :
+theorem group_cancel_rule_left_lemma (G : Type) [MyGroup G] (x a b : G) :
 a = b ↔ MyGroup.mul x a = MyGroup.mul x b := by {
   -- ->
   have h1 : a = b -> MyGroup.mul x a = MyGroup.mul x b := by {
@@ -164,7 +164,7 @@ a = b ↔ MyGroup.mul x a = MyGroup.mul x b := by {
 
 ----------------------------------------------------------------
 -- a * b = 1 -> b = a⁻¹
-theorem inv_unique_lemma [MyGroup G] (a b : G) (h : MyGroup.mul a b = MyGroup.one) :
+theorem inv_unique_lemma {G : Type} [MyGroup G] (a b : G) (h : MyGroup.mul a b = MyGroup.one) :
 b = MyGroup.inv a := by {
   have : MyGroup.mul (MyGroup.inv a) (MyGroup.mul a b) =
         MyGroup.mul (MyGroup.inv a) MyGroup.one := by {
@@ -181,7 +181,7 @@ b = MyGroup.inv a := by {
 
 ----------------------------------------------------------------
 -- (a⁻¹)⁻¹ = a
-theorem double_inv_lemma [MyGroup G] (a : G) :
+theorem double_inv_lemma {G : Type} [MyGroup G] (a : G) :
 MyGroup.inv (MyGroup.inv a) = a := by {
   have h : MyGroup.mul (MyGroup.inv a) (MyGroup.inv (MyGroup.inv a)) = MyGroup.one := by {
     apply MyGroup.mul_inv
@@ -202,7 +202,7 @@ MyGroup.inv (MyGroup.inv a) = a := by {
 
 ----------------------------------------------------------------
 -- 1⁻¹ = 1
-theorem inv_one_lemma {G : Type u} [MyGroup G] :
+theorem inv_one_lemma {G : Type} [MyGroup G] :
 (MyGroup.inv MyGroup.one : G) = MyGroup.one := by {
   have : (MyGroup.mul MyGroup.one MyGroup.one : G) =
   MyGroup.mul (MyGroup.inv MyGroup.one) MyGroup.one := by {
@@ -230,15 +230,31 @@ MyGroup.inv (MyGroup.mul a b) = MyGroup.mul (MyGroup.inv b) (MyGroup.inv a) := b
 
 
 ----------------------------------------------------------------
-theorem subgroup_contains_one_lemma {G : Type u} [MyGroup G] (H : Subgroup G) :
+theorem subgroup_contains_one_lemma {G : Type} [MyGroup G] (H : Subgroup G) :
 MyGroup.one ∈ H.carrier := by {
-  sorry
+  have h_nonempty : H.carrier ≠ ∅ := by apply Subgroup.nonempty
+  have h_g : ∃ g : G, g ∈ H.carrier := by {
+    contrapose! h_nonempty
+    rw [Set.eq_empty_iff_forall_not_mem]
+    exact h_nonempty
+  }
+  obtain ⟨g, h_g⟩ := h_g
+  have h_g_inv : MyGroup.inv g ∈ H.carrier := by {
+    apply Subgroup.inv_mem
+    exact h_g
+  }
+  have h_product : MyGroup.mul g (MyGroup.inv g) ∈ H.carrier := by {
+    apply Subgroup.mul_mem
+    exact ⟨h_g, h_g_inv⟩
+  }
+  rw [MyGroup.mul_inv] at h_product
+  exact h_product
 }
 
 
 ----------------------------------------------------------------
 -- g⁻¹ = MyGroup.inv g
-theorem pow_neg_one_eq_inv {G : Type u} [MyGroup G] (g : G) :
+theorem pow_neg_one_eq_inv {G : Type} [MyGroup G] (g : G) :
 group_pow g (-1) = MyGroup.inv g := by {
   have : -1 = Int.negSucc 0 := by simp
   rw [this]
@@ -248,7 +264,7 @@ group_pow g (-1) = MyGroup.inv g := by {
 
 -----------------------------------------------------------------
 -- g * g^n = g^n * g
-theorem pow_comm_aux {G : Type u} [MyGroup G] (g : G) (z : ℤ) :
+theorem pow_comm_aux {G : Type} [MyGroup G] (g : G) (z : ℤ) :
 MyGroup.mul g (group_pow g z) = MyGroup.mul (group_pow g z) g := by {
   cases z
   case ofNat n =>
@@ -283,7 +299,7 @@ MyGroup.mul g (group_pow g z) = MyGroup.mul (group_pow g z) g := by {
 
 --------------------------------------------------------------
 -- gⁿ * gᵐ = gᵐ * gⁿ
-theorem pow_comm_lemma {G : Type u} [MyGroup G] (g : G) (n m : ℤ) :
+theorem pow_comm_lemma {G : Type} [MyGroup G] (g : G) (n m : ℤ) :
 MyGroup.mul (group_pow g n) (group_pow g m) =
 MyGroup.mul (group_pow g m) (group_pow g n) := by {
   induction n
@@ -365,7 +381,7 @@ MyGroup.mul (group_pow g m) (group_pow g n) := by {
 
 --------------------------------------------------------------
 -- g^(z+1) = g^z * g
-theorem pow_add_one_nat_lemma {G : Type u} [MyGroup G] (g : G) (n : ℕ) :
+theorem pow_add_one_nat_lemma {G : Type} [MyGroup G] (g : G) (n : ℕ) :
 group_pow g (n+1) = MyGroup.mul (group_pow g n) g := by {
   rw [← pow_comm_aux]
   nth_rewrite 2 [group_pow]
@@ -377,7 +393,7 @@ group_pow g (n+1) = MyGroup.mul (group_pow g n) g := by {
 }
 
 
-theorem pow_add_one_lemma {G : Type u} [MyGroup G] (g : G) (z : ℤ) :
+theorem pow_add_one_lemma {G : Type} [MyGroup G] (g : G) (z : ℤ) :
 group_pow g (z+1) = MyGroup.mul (group_pow g z) g := by {
   cases z
   case ofNat n =>
@@ -419,14 +435,14 @@ group_pow g (z+1) = MyGroup.mul (group_pow g z) g := by {
       simp [group_pow]
 }
 
-theorem pow_sub_one_lemma {G : Type u} [MyGroup G] (g : G) :
+theorem pow_sub_one_lemma {G : Type} [MyGroup G] (g : G) :
 group_pow g (a - 1) = MyGroup.mul (group_pow g a) (MyGroup.inv g) := by {
   sorry
 }
 
 --------------------------------------------------------------
 -- g^(a+b) = g^a * g^b
-theorem pow_sum_lemma {G : Type u} [MyGroup G] (g : G) (a b : ℤ) :
+theorem pow_sum_lemma {G : Type} [MyGroup G] (g : G) (a b : ℤ) :
 group_pow g (a + b) = MyGroup.mul (group_pow g a) (group_pow g b) := by {
   cases a
   case ofNat a =>
@@ -928,7 +944,7 @@ theorem lemma_2_1_5 (H : Subgroup ℤ) :
 --------------------------------------------------------------
 -- let G be a group, H ⊆ G. H is a subgroup iff H is not empty, and
 -- ∀ h1, h2 ∈ H, h1⁻¹*h2 ∈ H
-theorem subgroup_iff_lemma (G : Type u) [MyGroup G] (H : Set G) :
+theorem subgroup_iff_lemma (G : Type) [MyGroup G] (H : Set G) :
 (∃ K : Subgroup G, K.carrier = H) ↔ (H ≠ ∅ ∧
 ∀ a b : G, (a ∈ H ∧ b ∈ H) -> MyGroup.mul (MyGroup.inv a) b ∈ H) := by {
   -- ->
@@ -1003,7 +1019,7 @@ theorem subgroup_iff_lemma (G : Type u) [MyGroup G] (H : Set G) :
 
 --------------------------------------------------------------
 -- A Subgroup contains the neutral element
-theorem subgroup_one_mem_lemma (G : Type u) [MyGroup G] (H : Subgroup G) :
+theorem subgroup_one_mem_lemma (G : Type) [MyGroup G] (H : Subgroup G) :
 MyGroup.one ∈ H.carrier := by {
   have h1 : H.carrier ≠ ∅ := by {
     apply Subgroup.nonempty
@@ -1032,7 +1048,7 @@ MyGroup.one ∈ H.carrier := by {
 
 ---------------------------------------------------------------
 -- Lemma: a bijective funktion has a inverse function
-theorem bijective_has_inverse_lemma {A : Type u} {B : Type v} (f : A → B)
+theorem bijective_has_inverse_lemma {A B : Type} (f : A → B)
 (h_bij : Function.Bijective f) :
 ∃ (f_inv : B → A),
 (∀ x2 : B, f (f_inv x2) = x2) ∧
@@ -1056,7 +1072,7 @@ theorem bijective_has_inverse_lemma {A : Type u} {B : Type v} (f : A → B)
 
 ----------------------------------------------------------------
 -- Lemma: if a function has a inverse, then the function is bijective
-theorem inverse_is_bijective_lemma {A : Type u} {B : Type v} (f : A -> B)
+theorem inverse_is_bijective_lemma {A B : Type} (f : A -> B)
 (h_inv : ∃ (f_inv : B → A),
 (∀ x2 : B, f (f_inv x2) = x2) ∧
 (∀ x1 : A, f_inv (f x1) = x1)) :
@@ -1079,7 +1095,7 @@ Function.Bijective f := by {
 
 -----------------------------------------------------------------
 -- group-isomorphisms are invertable
-theorem isomorphism_is_invertable_lemma (G1 : Type u) (G2 : Type v)
+theorem isomorphism_is_invertable_lemma (G1 G2 : Type)
 [MyGroup G1] [MyGroup G2] (φ : GroupIsomorphism G1 G2) :
 ∃ ψ : GroupHomomorphism G2 G1,
 (∀ x2 : G2, φ.f (ψ.f x2) = x2) ∧
@@ -1138,7 +1154,7 @@ theorem isomorphism_is_invertable_lemma (G1 : Type u) (G2 : Type v)
 
 ------------------------------------------------------------------
 -- an invertable group-homomorphism is a group-isomorphisms
-theorem invertable_homomorphism_is_isomorphism_lemma (G1 : Type u) (G2 : Type v)
+theorem invertable_homomorphism_is_isomorphism_lemma (G1 G2 : Type)
 [MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2)
 (h_inv : ∃ ψ : GroupHomomorphism G2 G1,
 (∀ x2 : G2, φ.f (ψ.f x2) = x2) ∧
@@ -1151,7 +1167,7 @@ theorem invertable_homomorphism_is_isomorphism_lemma (G1 : Type u) (G2 : Type v)
 
 -------------------------------------------------------------------
 -- group homomorphisms map the neutral element of G1 to the neutral element of G2
-theorem homomorphism_neutral_element_lemma (G1 : Type u) (G2 : Type v)
+theorem homomorphism_neutral_element_lemma (G1 G2 : Type)
 [MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
 φ.f MyGroup.one = MyGroup.one := by {
   let e1 : G1 := MyGroup.one
@@ -1178,7 +1194,7 @@ theorem homomorphism_neutral_element_lemma (G1 : Type u) (G2 : Type v)
 
 ------------------------------------------------------------------
 -- group homomorphisms map the inverse element to the inverse element
-theorem homomorphism_inverse_element_lemma (G1 : Type u) (G2 : Type v)
+theorem homomorphism_inverse_element_lemma (G1 G2 : Type)
 [MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
 ∀ x1 : G1, φ.f (MyGroup.inv x1) = MyGroup.inv (φ.f x1) := by {
   intro x1
@@ -1201,7 +1217,7 @@ theorem homomorphism_inverse_element_lemma (G1 : Type u) (G2 : Type v)
 
 --------------------------------------------------------------------
 -- g₁H = g₂H ↔ g₁⁻¹*g₂ ∈ H
-theorem left_coset_eq_lemma (G : Type u) [MyGroup G] (H : Subgroup G) (g1 g2 : G) :
+theorem left_coset_eq_lemma (G : Type) [MyGroup G] (H : Subgroup G) (g1 g2 : G) :
 left_coset G H g1 = left_coset G H g2 ↔
 MyGroup.mul (MyGroup.inv g1) g2 ∈ H.carrier := by {
   -- ->
@@ -1287,7 +1303,7 @@ MyGroup.mul (MyGroup.inv g1) g2 ∈ H.carrier := by {
 
 --------------------------------------------------------------------
 -- Hg₁ = Hg₂ ↔ g₁*g₂⁻¹ ∈ H
-theorem right_coset_eq_lemma (G : Type u) [MyGroup G] (H : Subgroup G) (g1 g2 : G) :
+theorem right_coset_eq_lemma (G : Type) [MyGroup G] (H : Subgroup G) (g1 g2 : G) :
 right_coset G H g1 = right_coset G H g2 ↔
 MyGroup.mul g1 (MyGroup.inv g2) ∈ H.carrier := by {
   -- ->
@@ -1366,7 +1382,7 @@ MyGroup.mul g1 (MyGroup.inv g2) ∈ H.carrier := by {
 
 -------------------------------------------------------------------
 -- H is a normal Subgroup ↔ ∀ h ∈ H, g ∈ G -> g⁻¹hg ∈ H
-theorem normal_iff_lemma {G : Type u} [MyGroup G] (H : Subgroup G) :
+theorem normal_iff_lemma {G : Type} [MyGroup G] (H : Subgroup G) :
 (∀ g : G, left_coset G H g = right_coset G H g) ↔
 (∀ h : H.carrier, ∀ g : G, MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ H.carrier) := by {
   -- ->
@@ -1453,7 +1469,7 @@ theorem normal_iff_lemma {G : Type u} [MyGroup G] (H : Subgroup G) :
   exact h_aa
 }
 
-theorem normal_subgroup_iff_lemma {G : Type u} [MyGroup G] (K : Set G) :
+theorem normal_subgroup_iff_lemma {G : Type} [MyGroup G] (K : Set G) :
 (∃ H : normal_subgroup G, H.carrier = K) ↔
 (∃ H : Subgroup G, H.carrier = K ∧
 ∀ h : H.carrier, ∀ g : G, MyGroup.mul (MyGroup.mul (MyGroup.inv g) h) g ∈ K) := by {
@@ -1484,7 +1500,7 @@ theorem normal_subgroup_iff_lemma {G : Type u} [MyGroup G] (K : Set G) :
 
 --------------------------------------------------------------------
 -- in an abelian group, every subgroup is normal
-theorem abelian_subgroup_is_normal_lemma (G : Type u) [AbelianGroup G] (K : Set G) :
+theorem abelian_subgroup_is_normal_lemma (G : Type) [AbelianGroup G] (K : Set G) :
 (∃ H : Subgroup G, H.carrier = K) -> (∃ H : normal_subgroup G, H.carrier = K) := by {
   intro h
   obtain ⟨H, h1⟩ := h
@@ -1514,7 +1530,7 @@ theorem abelian_subgroup_is_normal_lemma (G : Type u) [AbelianGroup G] (K : Set 
 -- Lemma 2.1.11
 ---------------------------------------------------------------------
 -- ker φ is a normal subgroup
-def ker_to_normal_subgroup {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
+def ker_to_normal_subgroup {G1 G2 : Type} [MyGroup G1] [MyGroup G2]
 (φ : GroupHomomorphism G1 G2) : normal_subgroup G1 := {
   carrier := ker φ
   nonempty := by {
@@ -1573,7 +1589,7 @@ def ker_to_normal_subgroup {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
 }
 
 
-theorem kernel_is_normal_subgroup_lemma (G1 : Type u) (G2 : Type v)
+theorem kernel_is_normal_subgroup_lemma (G1 G2 : Type)
 [MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
 ∃ N : normal_subgroup G1, N.carrier = ker φ := by {
   use ker_to_normal_subgroup φ
@@ -1582,7 +1598,7 @@ theorem kernel_is_normal_subgroup_lemma (G1 : Type u) (G2 : Type v)
 
 --------------------------------------------------------------------
 -- im φ is a subgroup
-def image_to_subgroup {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
+def image_to_subgroup {G1 G2 : Type} [MyGroup G1] [MyGroup G2]
 (φ : GroupHomomorphism G1 G2) : Subgroup G2 := {
   carrier := im φ
   nonempty := by {
@@ -1621,13 +1637,13 @@ def image_to_subgroup {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
   }
 }
 
-theorem image_is_subgroup_lemma (G1 : Type u) (G2 : Type v) [MyGroup G1] [MyGroup G2]
+theorem image_is_subgroup_lemma (G1 G2 : Type) [MyGroup G1] [MyGroup G2]
 (φ : GroupHomomorphism G1 G2) : ∃ H : Subgroup G2, H.carrier = im φ := by {
   use image_to_subgroup φ
   rw [image_to_subgroup]
 }
 
-instance image_is_group {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
+instance image_is_group {G1 G2 : Type} [MyGroup G1] [MyGroup G2]
 (φ : GroupHomomorphism G1 G2) : MyGroup (im φ) := {
   mul := λ x y => by {
     rw [im] at x y
@@ -1699,7 +1715,7 @@ instance image_is_group {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
 
 --------------------------------------------------------------------
 -- φ is injective ↔ ker φ = { one }
-theorem homomorphism_injective_iff_lemma (G1 : Type u) (G2 : Type v) [MyGroup G1]
+theorem homomorphism_injective_iff_lemma (G1 G2 : Type) [MyGroup G1]
 [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
 Function.Injective φ.f ↔ ker φ = { MyGroup.one } := by {
   -- ->
@@ -1769,7 +1785,7 @@ Function.Injective φ.f ↔ ker φ = { MyGroup.one } := by {
 -- Proposition 2.1.12
 -------------------------------------------------------------------
 -- left cosets are disjoint, or equal
-theorem left_cosets_disjoint_lemma (G : Type u) [MyGroup G]
+theorem left_cosets_disjoint_lemma (G : Type) [MyGroup G]
 (H : Subgroup G) (g1 g2 : G) : left_coset G H g1 = left_coset G H g2 ∨
 (left_coset G H g1) ∩ (left_coset G H g2) = ∅ := by {
   by_cases h_case : left_coset G H g1 = left_coset G H g2
@@ -1821,7 +1837,7 @@ theorem left_cosets_disjoint_lemma (G : Type u) [MyGroup G]
 
 ---------------------------------------------------------------------
 -- cosets have the same cardinality
-theorem left_coset_cardianlity_lemma (G : Type u) [MyGroup G]
+theorem left_coset_cardianlity_lemma (G : Type) [MyGroup G]
 (H : Subgroup G) (g : G) :
 same_cardinality H.carrier (left_coset G H g) := by {
   rw [same_cardinality]
@@ -1852,7 +1868,7 @@ same_cardinality H.carrier (left_coset G H g) := by {
   exact h_aa
 }
 
-theorem right_coset_cardianlity_lemma (G : Type u) [MyGroup G]
+theorem right_coset_cardianlity_lemma (G : Type) [MyGroup G]
 (H : Subgroup G) (g : G) :
 same_cardinality H.carrier (right_coset G H g) := by {
   rw [same_cardinality]
@@ -1885,7 +1901,7 @@ same_cardinality H.carrier (right_coset G H g) := by {
 
 -----------------------------------------------------------------
 -- G is the union of its cosets
-theorem left_coset_union_lemma (G : Type u) [MyGroup G] (H : Subgroup G) :
+theorem left_coset_union_lemma (G : Type) [MyGroup G] (H : Subgroup G) :
 ⋃ g : G, (left_coset G H g) = { x | ∃ g : G, x = g } := by {
   ext g
   simp
@@ -1898,7 +1914,7 @@ theorem left_coset_union_lemma (G : Type u) [MyGroup G] (H : Subgroup G) :
   rw [MyGroup.mul_one]
 }
 
-theorem right_coset_union_lemma (G : Type u) [MyGroup G] (H : Subgroup G) :
+theorem right_coset_union_lemma (G : Type) [MyGroup G] (H : Subgroup G) :
 ⋃ g : G, (right_coset G H g) = { x | ∃ g : G, x = g } := by {
   ext g
   simp
@@ -1917,7 +1933,7 @@ theorem right_coset_union_lemma (G : Type u) [MyGroup G] (H : Subgroup G) :
 
 
 -- theorem 2.1.16
-theorem coset_mul_welldefined_lemma ( G : Type u) [MyGroup G] (H : normal_subgroup G)
+theorem coset_mul_welldefined_lemma ( G : Type) [MyGroup G] (H : normal_subgroup G)
 (a a' b b' : left_coset' G H) :
 a.carrier = a'.carrier ∧ b.carrier = b'.carrier ->
 (left_coset_mul a b).carrier = (left_coset_mul a' b').carrier := by {
@@ -1971,7 +1987,7 @@ a.carrier = a'.carrier ∧ b.carrier = b'.carrier ->
 }
 
 
-theorem coset_inv_welldefined_lemma (G : Type u) [MyGroup G] (H : normal_subgroup G)
+theorem coset_inv_welldefined_lemma (G : Type) [MyGroup G] (H : normal_subgroup G)
 (a a' : left_coset' G H) :
 a.carrier = a'.carrier ->
 (left_coset_inv a).carrier = (left_coset_inv a').carrier := by {
@@ -1985,7 +2001,7 @@ a.carrier = a'.carrier ->
 
 -----------------------------------------------------------------------------
 -- the set of all left cosets is a group
-instance (G : Type u) [MyGroup G] (H : normal_subgroup G) :
+instance (G : Type) [MyGroup G] (H : normal_subgroup G) :
 MyGroup (left_coset' G H) := {
   mul := left_coset_mul
   one := left_coset_one

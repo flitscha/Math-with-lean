@@ -1,7 +1,7 @@
 import Math.Algebra.C2_Groups.C2_1_Basics.theorems
 
 -- definition of the homomorphism in the homomorphism-theorem
-def quotient_homomorphism {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
+def quotient_homomorphism {G1 G2 : Type} [MyGroup G1] [MyGroup G2]
 (φ : GroupHomomorphism G1 G2) :
 GroupHomomorphism (left_coset' G1 (ker_to_normal_subgroup φ)) G2 := {
   f := λ x => by {
@@ -17,34 +17,34 @@ GroupHomomorphism (left_coset' G1 (ker_to_normal_subgroup φ)) G2 := {
 }
 
 
-def quotient_is_injective {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
+def quotient_is_injective {G1 G2 : Type} [MyGroup G1] [MyGroup G2]
 {H : normal_subgroup G1} (φ : GroupHomomorphism (left_coset' G1 H) G2) : Prop :=
   ∀ a b : (left_coset' G1 H), a.carrier ≠ b.carrier -> φ.f a ≠ φ.f b
 
 
-def quotient_is_isomorphism {G1 : Type u} {G2 : Type v} [MyGroup G1] [MyGroup G2]
+def quotient_is_isomorphism {G1 G2 : Type} [MyGroup G1] [MyGroup G2]
 {H : normal_subgroup G1} (φ : GroupHomomorphism (left_coset' G1 H) G2) : Prop :=
   Function.Surjective φ.f ∧ quotient_is_injective φ
 
 
 -- isomorphism: G1/H -> G2
-structure quotient_isomorphism (G1 : Type u) [MyGroup G1] (H : normal_subgroup G1)
-(G2 : Type v) [MyGroup G2] extends GroupHomomorphism (left_coset' G1 H) G2 :=
+structure quotient_isomorphism (G1 : Type) [MyGroup G1] (H : normal_subgroup G1)
+(G2 : Type) [MyGroup G2] extends GroupHomomorphism (left_coset' G1 H) G2 :=
   injective' : quotient_is_injective toGroupHomomorphism
   surjective : Function.Surjective f
 
 -- G1/H is isomorphic to G2
-def quotient_is_isomorphic_to (G1 : Type u) [MyGroup G1] (H : normal_subgroup G1)
-(G2 : Type v) [MyGroup G2] : Prop :=
+def quotient_is_isomorphic_to (G1 : Type) [MyGroup G1] (H : normal_subgroup G1)
+(G2 : Type) [MyGroup G2] : Prop :=
   ∃ φ : quotient_isomorphism G1 H G2, true
 
 
-def list_prod {G : Type u} [MyGroup G] : List G -> G
+def list_prod {G : Type} [MyGroup G] : List G -> G
 | [] => MyGroup.one
 | x :: xs => MyGroup.mul x (list_prod xs)
 
 
-theorem list_prod_of_merged_list {G : Type u} [MyGroup G] (l1 : List G) (l2 : List G) :
+theorem list_prod_of_merged_list {G : Type} [MyGroup G] (l1 : List G) (l2 : List G) :
 list_prod (l1 ++ l2) = MyGroup.mul (list_prod l1) (list_prod l2) := by {
   cases l1
   case nil =>
@@ -58,12 +58,12 @@ list_prod (l1 ++ l2) = MyGroup.mul (list_prod l1) (list_prod l2) := by {
 }
 
 
-def list_inv {G : Type u} [MyGroup G] : List G -> List G
+def list_inv {G : Type} [MyGroup G] : List G -> List G
 | [] => []
 | x :: xs => list_inv xs ++ [(MyGroup.inv x)]
 
 
-theorem list_inv_eq_inv {G : Type u} [MyGroup G] (l : List G) :
+theorem list_inv_eq_inv {G : Type} [MyGroup G] (l : List G) :
 list_prod (list_inv l) = MyGroup.inv (list_prod l) := by {
   cases l
   case nil =>
@@ -79,7 +79,7 @@ list_prod (list_inv l) = MyGroup.inv (list_prod l) := by {
 }
 
 
-theorem list_inv_of_merged_list {G : Type u} [MyGroup G] (l1 : List G) (l2 : List G) :
+theorem list_inv_of_merged_list {G : Type} [MyGroup G] (l1 : List G) (l2 : List G) :
 list_inv (l1 ++ l2) = (list_inv l2) ++ (list_inv l1) := by {
   cases l1
   case nil =>
@@ -91,7 +91,7 @@ list_inv (l1 ++ l2) = (list_inv l2) ++ (list_inv l1) := by {
 }
 
 
-theorem list_inv_inv {G : Type u} [MyGroup G] (l : List G) :
+theorem list_inv_inv {G : Type} [MyGroup G] (l : List G) :
 list_inv (list_inv l) = l := by {
   cases l
   case nil =>
@@ -106,7 +106,7 @@ list_inv (list_inv l) = l := by {
 }
 
 
-theorem list_inv_mem {G : Type u} [MyGroup G] (l : List G) (g : G) :
+theorem list_inv_mem {G : Type} [MyGroup G] (l : List G) (g : G) :
 g ∈ l -> MyGroup.inv g ∈ (list_inv l) := by {
   intro h
   cases l
@@ -127,7 +127,7 @@ g ∈ l -> MyGroup.inv g ∈ (list_inv l) := by {
 
 
 -- generated subgroups
-def generated_group (G : Type u) [MyGroup G] (A : Set G) : Subgroup G := {
+def generated_group (G : Type) [MyGroup G] (A : Set G) : Subgroup G := {
   carrier := { g | ∃ l : List G, (∀ x ∈ l, x ∈ A ∨ MyGroup.inv x ∈ A) ∧ (list_prod l) = g }
   nonempty := by {
     have : MyGroup.one ∈ {g | ∃ l, (∀ x ∈ l, x ∈ A ∨ MyGroup.inv x ∈ A) ∧ list_prod l = g} := by {
@@ -194,11 +194,11 @@ def generated_group (G : Type u) [MyGroup G] (A : Set G) : Subgroup G := {
 
 
 -- cyclic groups: a generated group, where the generator-set has only one element
-def cyclic_group (G : Type u) [MyGroup G] (g : G) : Subgroup G :=
+def cyclic_group (G : Type) [MyGroup G] (g : G) : Subgroup G :=
   generated_group G {g}
 
 
-theorem cyclic_group_carrier_lemma (G : Type u) [MyGroup G] (g : G) :
+theorem cyclic_group_carrier_lemma (G : Type) [MyGroup G] (g : G) :
 (cyclic_group G g).carrier = { x | ∃ z : ℤ, x = group_pow g z } := by {
   ext x
   simp
