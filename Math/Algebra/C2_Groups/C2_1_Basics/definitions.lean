@@ -217,6 +217,8 @@ def same_cardinality {m1 : Type} {m2 : Type}
 
 -- we want to show, that the set of all left cosets is a group.
 -- We define this structs, to make is easier
+
+/-
 structure left_coset' (G : Type) [MyGroup G] (H : Subgroup G) :=
   g : G
   carrier : Set G
@@ -251,3 +253,80 @@ def left_coset_inv {G : Type} [MyGroup G] {H : normal_subgroup G}
     h_carrier := by simp
   }
 }
+
+-/
+
+
+
+-- Definiere die Quotientengruppe als Typ
+/-
+def quotient_group (G : Type) [group G] (H : subgroup G) : Type :=
+quotient (left_coset_setoid G H)
+
+-- Instanz der Gruppe auf der Quotientengruppe
+instance quotient_group_group (G : Type) [group G] (H : normal_subgroup G) : group (quotient_group G H) :=
+{ mul := λ x y, quotient.lift_on₂' x y (λ a b, ⟦a * b⟧)
+    (begin
+      -- Wohldefiniertheit der Multiplikation zeigen
+      intros a₁ a₂ b₁ b₂ ha hb,
+      obtain ⟨h₁, h₁H, ha_eq⟩ := ha,
+      obtain ⟨h₂, h₂H, hb_eq⟩ := hb,
+      apply quotient.sound,
+      use h₁ * h₂,
+      split,
+      { exact H.mul_mem h₁H h₂H },
+      { rw [ha_eq, hb_eq, mul_assoc, mul_assoc, ← mul_assoc b₁, mul_assoc b₁, mul_assoc b₁, mul_assoc, mul_assoc (b₁ * h₁), ← mul_assoc] }
+    end),
+  one := ⟦1⟧,
+  mul_assoc := begin
+    intros x y z,
+    apply quotient.induction_on₃' x y z,
+    intros a b c,
+    apply quotient.sound,
+    use 1,
+    split,
+    { exact H.one_mem },
+    { simp }
+  end,
+  one_mul := begin
+    intro x,
+    apply quotient.induction_on' x,
+    intro a,
+    apply quotient.sound,
+    use 1,
+    split,
+    { exact H.one_mem },
+    { simp }
+  end,
+  mul_one := begin
+    intro x,
+    apply quotient.induction_on' x,
+    intro a,
+    apply quotient.sound,
+    use 1,
+    split,
+    { exact H.one_mem },
+    { simp }
+  end,
+  inv := λ x, quotient.lift_on' x (λ a, ⟦a⁻¹⟧)
+    (begin
+      -- Wohldefiniertheit des Inversen zeigen
+      intros a b h,
+      obtain ⟨h', h'H, ha_eq⟩ := h,
+      apply quotient.sound,
+      use h'⁻¹,
+      split,
+      { exact H.inv_mem h'H },
+      { rw [ha_eq, mul_inv_eq_iff_eq_mul] }
+    end),
+  mul_left_inv := begin
+    intro x,
+    apply quotient.induction_on' x,
+    intro a,
+    apply quotient.sound,
+    use a⁻¹,
+    split,
+    { exact H.inv_mem H.one_mem },
+    { simp }
+  end }
+-/

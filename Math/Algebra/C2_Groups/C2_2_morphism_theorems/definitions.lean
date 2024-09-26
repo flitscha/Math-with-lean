@@ -1,6 +1,7 @@
-import Math.Algebra.C2_Groups.C2_1_Basics.theorems
+import Math.Algebra.C2_Groups.C2_1_Basics.quotient_group
 
 -- definition of the homomorphism in the homomorphism-theorem
+/-
 def quotient_homomorphism {G1 G2 : Type} [MyGroup G1] [MyGroup G2]
 (φ : GroupHomomorphism G1 G2) :
 GroupHomomorphism (left_coset' G1 (ker_to_normal_subgroup φ)) G2 := {
@@ -14,9 +15,50 @@ GroupHomomorphism (left_coset' G1 (ker_to_normal_subgroup φ)) G2 := {
     rw [GroupHomomorphism.f]
     apply φ.mul
   }
+}-/
+
+def quotient_homomorphism {G1 G2 : Type} [MyGroup G1] [MyGroup G2]
+(φ : GroupHomomorphism G1 G2) :
+GroupHomomorphism (quotient_group G1 (ker_to_normal_subgroup φ)) G2 := {
+  f := by {
+    apply Quotient.lift (λ g : G1 => φ.f g)
+    -- we show, that the definition is welldefined
+    intros a b
+    intro h
+    simp [HasEquiv.Equiv, instHasEquivOfSetoid, Setoid.r, left_coset_setoid, left_coset_rel] at h
+    obtain ⟨k, h_k, h⟩ := h
+    rw [h]
+    rw [GroupHomomorphism.mul]
+    have : (GroupHomomorphism.f k) = MyGroup.one := by {
+      simp [ker_to_normal_subgroup] at h_k
+      simp [ker] at h_k
+      exact h_k
+    }
+    rw [this]
+    rw [MyGroup.mul_one]
+  }
+
+  mul := by {
+    intros a b
+    let g_a : G1 := quotient_to_repr a
+    have h_a : ⟦g_a⟧ = a := by {
+      simp [g_a]
+      apply repr_lemma
+    }
+    let g_b : G1 := quotient_to_repr b
+    have h_b : ⟦g_b⟧ = b := by {
+      simp [g_b]
+      apply repr_lemma
+    }
+    rw [← h_a, ← h_b]
+    simp
+    simp [MyGroup.mul]
+    simp [quotient_group_mul]
+    rw [GroupHomomorphism.mul]
+  }
 }
 
-
+/-
 def quotient_is_injective {G1 G2 : Type} [MyGroup G1] [MyGroup G2]
 {H : normal_subgroup G1} (φ : GroupHomomorphism (left_coset' G1 H) G2) : Prop :=
   ∀ a b : (left_coset' G1 H), a.carrier ≠ b.carrier -> φ.f a ≠ φ.f b
@@ -37,7 +79,7 @@ structure quotient_isomorphism (G1 : Type) [MyGroup G1] (H : normal_subgroup G1)
 def quotient_is_isomorphic_to (G1 : Type) [MyGroup G1] (H : normal_subgroup G1)
 (G2 : Type) [MyGroup G2] : Prop :=
   ∃ φ : quotient_isomorphism G1 H G2, true
-
+-/
 
 def list_prod {G : Type} [MyGroup G] : List G -> G
 | [] => MyGroup.one

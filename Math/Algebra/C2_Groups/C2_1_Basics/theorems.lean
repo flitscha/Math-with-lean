@@ -1931,6 +1931,7 @@ theorem right_coset_union_lemma (G : Type) [MyGroup G] (H : Subgroup G) :
 -- theorem 2.1.13 (Lagrange theorem)
 -- difficult with cardinality
 
+/-
 
 -- theorem 2.1.16
 theorem coset_mul_welldefined_lemma ( G : Type) [MyGroup G] (H : normal_subgroup G)
@@ -2064,6 +2065,6 @@ MyGroup (left_coset' G H) := {
     rw [this]
   }
 }
-
+-/
 
 -- Theorem 2.1.19 (difficult with cardinality)
