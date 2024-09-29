@@ -33,6 +33,21 @@ structure Subgroup (G : Type) [MyGroup G] where
   mul_mem : ∀ a b : G, (a ∈ carrier ∧ b ∈ carrier) → MyGroup.mul a b ∈ carrier
   inv_mem : ∀ a : G, a ∈ carrier → MyGroup.inv a ∈ carrier
 
+
+def FullSubgroup (G : Type) [MyGroup G] : Subgroup G := {
+  carrier := { x : G | true }
+  nonempty := by {
+    have : MyGroup.one ∈ { x : G | true } := by {
+      simp
+    }
+    contrapose! this
+    rw [Set.eq_empty_iff_forall_not_mem] at this
+    apply this
+  }
+  mul_mem := by simp
+  inv_mem := by simp
+}
+
 def Subgroup.toType [MyGroup G] (H : Subgroup G) : Type :=
   { x // x ∈ H.carrier }
 /-

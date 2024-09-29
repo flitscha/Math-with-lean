@@ -52,7 +52,17 @@ instance left_coset_setoid (G : Type) [MyGroup G] (H : normal_subgroup G) : Seto
 def quotient_group (G : Type) [MyGroup G] (H : normal_subgroup G) : Type :=
   Quotient (left_coset_setoid G H)
 
+/-
+theorem quotient_group_eq_lemma (G : Type) [MyGroup G] (H : normal_subgroup G) :
+  quotient_group G H = { x : G // ∀ g : G, MyGroup.mul x (MyGroup.inv g) ∈ H.carrier } := by {
 
+  rw [quotient_group]
+  simp [Quotient, Setoid.r]
+
+}-/
+
+--theorem quotient_group_eq_lemma (G : Type) [MyGroup G] (H : normal_subgroup G) :
+--quotient_group G H = { ⟦x⟧ ∈  left_coset_setoid G H | x ∈ G }
 /-
 noncomputable def quotient_to_repr {G : Type} [MyGroup G] {H : normal_subgroup G} :
   quotient_group G H → G × Setoid G :=

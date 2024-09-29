@@ -1166,6 +1166,107 @@ theorem invertable_homomorphism_is_isomorphism_lemma (G1 G2 : Type)
 
 
 -------------------------------------------------------------------
+-- the full subgroup is isomorphic to the group itself
+theorem full_subgroup_isomorphic_lemma (G : Type) [MyGroup G] :
+groupsAreIsomorphic G (FullSubgroup G).carrier := by {
+  rw [groupsAreIsomorphic]
+  let φ : GroupIsomorphism G ↑(FullSubgroup G).carrier := {
+    f := λ g => by {
+      have : g ∈ ↑(FullSubgroup G).carrier := by {
+        simp [FullSubgroup]
+      }
+      exact ⟨g, this⟩
+    }
+    mul := by {
+      intros a b
+      simp [MyGroup.mul]
+    }
+    injective := by {
+      simp [Function.Injective]
+    }
+    surjective := by {
+      simp [Function.Surjective]
+    }
+  }
+  use φ
+}
+
+
+-------------------------------------------------------------------
+-- if G1 ≅ G2 then: G2 ≅ G1
+theorem isomorphic_symm_lemma (G1 G2 : Type) [MyGroup G1] [MyGroup G2]
+(h : groupsAreIsomorphic G1 G2) : groupsAreIsomorphic G2 G1 := by {
+  rw [groupsAreIsomorphic]
+  obtain ⟨φ, _⟩ := h
+
+  have h_inv : ∃ ψ : GroupHomomorphism G2 G1,
+      (∀ x2 : G2, φ.f (ψ.f x2) = x2) ∧
+      (∀ x1 : G1, ψ.f (φ.f x1) = x1) := by {
+    apply isomorphism_is_invertable_lemma
+  }
+  obtain ⟨ψ, h_right_inv, h_left_inv⟩ := h_inv
+
+  let φ_inv : GroupIsomorphism G2 G1 := {
+    toGroupHomomorphism := ψ
+    injective := by {
+      simp [Function.Injective]
+      intros x1 x2 h_eq
+      have h1 : φ.f (ψ.f x1) = x1 := h_right_inv x1
+      have h2 : φ.f (ψ.f x2) = x2 := h_right_inv x2
+      rw [← h1, ← h2, h_eq]
+    }
+    surjective := by {
+      simp [Function.Surjective]
+      intro x
+      use φ.f x
+      exact h_left_inv x
+    }
+  }
+  use φ_inv
+}
+
+-------------------------------------------------------------------
+-- if G1 ≅ G2 and G2 ≅ G3 then: G1 ≅ G3
+theorem isomorphic_trans_lemma (G1 G2 G3 : Type) [MyGroup G1] [MyGroup G2] [MyGroup G3]
+(h1 : groupsAreIsomorphic G1 G2) (h2 : groupsAreIsomorphic G2 G3) :
+groupsAreIsomorphic G1 G3 := by {
+  rw [groupsAreIsomorphic] at h1 h2 ⊢
+  obtain ⟨φ1, h1⟩ := h1
+  obtain ⟨φ2, h2⟩ := h2
+  obtain ⟨φ1, φ1_inj, φ1_sur⟩ := φ1
+  obtain ⟨φ2, φ2_inj, φ2_sur⟩ := φ2
+
+  let φ : GroupIsomorphism G1 G3 := {
+    f := λ x => φ2.f (φ1.f x)
+    mul := by {
+      intros a b
+      simp
+      simp [GroupHomomorphism.mul]
+    }
+    injective := by {
+      simp [Function.Injective]
+      intros a b
+      intro h
+      apply φ1_inj
+      apply φ2_inj
+      exact h
+    }
+    surjective := by {
+      simp [Function.Surjective]
+      intro b
+      rw [Function.Surjective] at φ1_sur φ2_sur
+      obtain ⟨z, hz⟩ := φ2_sur b
+      obtain ⟨a, ha⟩ := φ1_sur z
+      use a
+      rw [ha, hz]
+    }
+  }
+
+  use φ
+}
+
+
+-------------------------------------------------------------------
 -- group homomorphisms map the neutral element of G1 to the neutral element of G2
 theorem homomorphism_neutral_element_lemma (G1 G2 : Type)
 [MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :

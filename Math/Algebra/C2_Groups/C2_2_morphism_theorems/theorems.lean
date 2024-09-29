@@ -24,7 +24,6 @@ Function.Injective (quotient_homomorphism φ).f := by {
   rw [GroupHomomorphism.f] at h
   simp [quotient_homomorphism] at h
 
-  --apply Quotient.eq
   apply Quot.eq.mpr
   simp [Setoid.r]
   constructor
@@ -287,10 +286,38 @@ def HN (H : Subgroup G) (N : normal_subgroup G) : Subgroup G := {
 -- ii) N is a normal Subgroup of HN
 def N' (H : Subgroup G) (N : normal_subgroup G) : normal_subgroup (HN H N).carrier := {
   carrier := { x : ↑(HN H N).carrier | ∃ g : G, g = x ∧ g ∈ N.carrier }
-  nonempty := sorry
-  mul_mem := sorry
-  inv_mem := sorry
-  normal := sorry
+  nonempty := by {
+    have : MyGroup.one ∈ { x : ↑(HN H N).carrier | ∃ g : G, g = x ∧ g ∈ N.carrier } := by {
+      simp
+      apply subgroup_contains_one_lemma
+    }
+    contrapose! this
+    rw [Set.eq_empty_iff_forall_not_mem] at this
+    apply this
+  }
+  mul_mem := by {
+    intros a b h
+    simp at h ⊢
+    apply Subgroup.mul_mem
+    exact h
+  }
+  inv_mem := by {
+    intros a h
+    simp at h ⊢
+    apply Subgroup.inv_mem
+    apply h
+  }
+  normal := by {
+    rw [normal_iff_lemma]
+    simp
+    intros a h_a h_a'
+    intros g h_g
+    -- we use that N is normal
+    obtain ⟨N, N_normal⟩ := N
+    rw [normal_iff_lemma] at N_normal
+    specialize N_normal ⟨a, h_a'⟩ g
+    apply N_normal
+  }
 }
 
 
@@ -308,7 +335,122 @@ def H_inter_N (H : Subgroup G) (N : normal_subgroup G) : normal_subgroup H.carri
 theorem isomorphism_theorem_1 :
 groupsAreIsomorphic (quotient_group H.carrier (H_inter_N H N))
 (quotient_group (HN H N).carrier (N' H N)) := by {
-  sorry
+  -- we define a homomorphism φ, and then we use the homomorphism-theorem
+  let φ : GroupHomomorphism H.carrier (quotient_group (HN H N).carrier (N' H N)) := {
+    f := λ h => by {
+      have : ↑h ∈ (HN H N).carrier := by {
+        simp [HN]
+        use h
+        simp
+        use MyGroup.one
+        constructor
+        apply subgroup_one_mem_lemma
+        rw [MyGroup.mul_one]
+      }
+      exact ⟦⟨h, this⟩⟧
+    }
+    mul := by {
+      intros a b
+      simp
+      simp [MyGroup.mul]
+      rw [quotient_group_mul]
+      simp [MyGroup.mul]
+    }
+  }
+
+  have h_surj : Function.Surjective φ.f := by {
+    rw [Function.Surjective]
+    intro a
+    let g_a : (↑(HN H N).carrier) := quotient_to_repr a
+    have : a = ⟦g_a⟧ := by {
+      simp [g_a]
+      rw [repr_lemma]
+    }
+    simp [this]
+    simp [GroupHomomorphism.f]
+
+    simp only [HN] at g_a
+    obtain ⟨g, h, n, h_h, h_n, h_g⟩ := g_a
+    simp [h_g] at this ⊢
+
+    use h
+    constructor
+    apply Quot.eq.mpr
+    simp [Setoid.r]
+    constructor
+    rw [left_coset_rel]
+    simp [MyGroup.mul]
+
+    use MyGroup.inv n
+    constructor
+    constructor
+    simp [N']
+    apply Subgroup.inv_mem
+    apply h_n
+    simp [HN]
+    use MyGroup.one
+    constructor
+    apply subgroup_one_mem_lemma
+    use MyGroup.inv n
+    constructor
+    apply Subgroup.inv_mem
+    apply h_n
+    rw [MyGroup.one_mul]
+    rw [MyGroup.mul_assoc]
+    rw [MyGroup.mul_inv, MyGroup.mul_one]
+    apply h_h
+  }
+
+  have h_ker : ker φ = (H_inter_N H N).carrier := by {
+    simp [H_inter_N, ker]
+    ext x
+    simp
+    -- ->
+    constructor
+    intro h
+    --apply Quot.neq.mpr
+    simp [GroupHomomorphism.f, MyGroup.one] at h
+    apply Quot.eq.mp at h
+    simp [Setoid.r] at h
+    cases h
+    case h.mp.rel r =>
+      simp
+    simp
+  }
+
+  have h_im : image_to_subgroup φ = FullSubgroup (quotient_group (↑(HN H N).carrier) (N' H N)) := by {
+    sorry
+  }
+
+  have h_isomorphic : groupsAreIsomorphic
+      (quotient_group H.carrier (ker_to_normal_subgroup φ))
+      (image_to_subgroup φ).carrier := by {
+    apply homomorphism_theorem
+  }
+
+  have : (ker_to_normal_subgroup φ) = (H_inter_N H N) := by {
+    simp [ker_to_normal_subgroup, H_inter_N]
+    rw [h_ker]
+    simp [H_inter_N]
+  }
+
+  rw [this] at h_isomorphic
+  rw [h_im] at h_isomorphic
+
+  have h_full_subgroup : groupsAreIsomorphic
+      (quotient_group (↑(HN H N).carrier) (N' H N))
+      ↑(FullSubgroup (quotient_group (↑(HN H N).carrier) (N' H N))).carrier := by {
+    apply full_subgroup_isomorphic_lemma
+  }
+
+  apply isomorphic_trans_lemma
+    (quotient_group (↑H.carrier) (H_inter_N H N))
+    (FullSubgroup (quotient_group (↑(HN H N).carrier) (N' H N))).carrier
+    (quotient_group (↑(HN H N).carrier) (N' H N))
+
+  apply h_isomorphic
+  apply isomorphic_symm_lemma
+  apply h_full_subgroup
 }
 
 
