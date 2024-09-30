@@ -129,6 +129,7 @@ groupsAreIsomorphic (quotient_group G1 (ker_to_normal_subgroup φ)) (image_to_su
 
 
 
+-- every cyclic group is isomorphic to Z/nZ for a n ∈ ℤ
 theorem cyclic_group_isomorphic_to_Z {G : Type} [MyGroup G] (g : G)
 (C : Subgroup G) (h_c : C = cyclic_group G g) :
 ∃ n : ℤ, groupsAreIsomorphic (quotient_group ℤ (nZ n)) C.carrier := by {
@@ -191,7 +192,7 @@ theorem cyclic_group_isomorphic_to_Z {G : Type} [MyGroup G] (g : G)
 }
 
 
-
+-- first isomorphic theorem
 section isomorphism_theorem
 variable {G : Type} [MyGroup G] {H : Subgroup G} {N : normal_subgroup G}
 
@@ -324,10 +325,40 @@ def N' (H : Subgroup G) (N : normal_subgroup G) : normal_subgroup (HN H N).carri
 -- ii) H ∩ N is a normal Subgroup of N
 def H_inter_N (H : Subgroup G) (N : normal_subgroup G) : normal_subgroup H.carrier := {
   carrier := { h : H.carrier | ∃ g : G, h = g ∧ g ∈ N.carrier }
-  nonempty := sorry
-  mul_mem := sorry
-  inv_mem := sorry
-  normal := sorry
+  nonempty := by {
+    have : MyGroup.one ∈ { h : H.carrier | ∃ g : G, h = g ∧ g ∈ N.carrier } := by {
+      simp
+      apply subgroup_contains_one_lemma
+    }
+    contrapose! this
+    rw [Set.eq_empty_iff_forall_not_mem] at this
+    apply this
+  }
+  mul_mem := by {
+    intros a b
+    simp
+    intros h_a h_b
+    apply Subgroup.mul_mem
+    exact ⟨h_a, h_b⟩
+  }
+  inv_mem := by {
+    intro a
+    simp
+    intro h
+    apply Subgroup.inv_mem
+    exact h
+  }
+  normal := by {
+    rw [normal_iff_lemma]
+    simp
+    intros a h_a h_a'
+    intros g h_g
+    -- we use that N is normal
+    obtain ⟨N, N_normal⟩ := N
+    rw [normal_iff_lemma] at N_normal
+    specialize N_normal ⟨a, h_a'⟩ g
+    apply N_normal
+  }
 }
 
 
@@ -407,19 +438,65 @@ groupsAreIsomorphic (quotient_group H.carrier (H_inter_N H N))
     simp
     -- ->
     constructor
-    intro h
-    --apply Quot.neq.mpr
-    simp [GroupHomomorphism.f, MyGroup.one] at h
-    apply Quot.eq.mp at h
-    simp [Setoid.r] at h
-    cases h
-    case h.mp.rel r =>
-      simp
-    simp
+    case h.mp =>
+      intro h
+      simp [GroupHomomorphism.f, MyGroup.one] at h
+      rw [quot_eq_lemma] at h
+      obtain ⟨h, h_h, h_x⟩ := h
+      simp [N'] at h_h
+      let h' : N.carrier := ⟨h, h_h⟩
+      have : (x : G) = h' := by {
+        contrapose! h_x
+        simp [MyGroup.mul]
+        rw [MyGroup.one_mul]
+        apply h_x
+      }
+      rw [this]
+      apply h_h
+
+    case h.mpr =>
+      intro h
+      simp [GroupHomomorphism.f, MyGroup.one]
+      rw [quot_eq_lemma]
+      simp [MyGroup.mul, HN, N', MyGroup.one_mul]
+      exact h
   }
 
   have h_im : image_to_subgroup φ = FullSubgroup (quotient_group (↑(HN H N).carrier) (N' H N)) := by {
-    sorry
+    simp [image_to_subgroup, FullSubgroup, im]
+    rw [Set.univ]
+    ext x
+    simp
+    simp [GroupHomomorphism.f]
+    let x' : (↑(HN H N).carrier) := quotient_to_repr x
+    have h_x : x = ⟦x'⟧ := by {
+      simp [x']
+      simp [repr_lemma]
+    }
+    rw [h_x]
+    -- we split the x'
+    obtain ⟨g_x, h_g_x⟩ := x'
+    simp [HN] at h_g_x
+    obtain ⟨h, h_h, n, h_n, h_g_x⟩ := h_g_x
+
+    use h
+    use h_h
+    rw [quot_eq_lemma]
+    simp [N']
+    use n
+    constructor
+    exact h_n
+    constructor
+    simp [MyGroup.mul]
+    exact h_g_x
+    simp [HN]
+    use MyGroup.one
+    constructor
+    apply subgroup_contains_one_lemma
+    use n
+    constructor
+    exact h_n
+    rw [MyGroup.one_mul]
   }
 
   have h_isomorphic : groupsAreIsomorphic

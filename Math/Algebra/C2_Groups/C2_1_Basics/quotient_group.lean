@@ -86,6 +86,22 @@ theorem repr_lemma {G : Type} [MyGroup G] {H : normal_subgroup G}
   sorry
 }
 
+
+theorem quot_eq_lemma {G : Type} [MyGroup G] {H : normal_subgroup G}
+{g1 g2 : G} : (⟦g1⟧ : quotient_group G H) = ⟦g2⟧ ↔
+∃ h ∈ H.carrier, g1 = MyGroup.mul g2 h := by {
+  constructor
+  intro h
+  simp [Quotient.eq] at h
+  simp [HasEquiv.Equiv, Setoid.r, left_coset_rel] at h
+  exact h
+
+  intro h
+  simp [Quotient.eq]
+  simp [HasEquiv.Equiv, Setoid.r, left_coset_rel]
+  exact h
+}
+
 /-
 theorem repr_lemma {G : Type} [MyGroup G] {H : normal_subgroup G}
 (a : quotient_group G H) : ⟦quotient_to_repr a⟧ = a := by {
