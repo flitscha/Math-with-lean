@@ -16,7 +16,7 @@ class MyGroup (G : Type) where
 class AbelianGroup (G : Type) extends MyGroup G where
   mul_comm : ∀ a b : G, mul a b = mul b a
 
-
+/-
 def group_pow_nat {G : Type} [MyGroup G] (g : G) : ℕ → G
 | 0       => MyGroup.one
 | (n + 1) => MyGroup.mul g (group_pow_nat g n)
@@ -25,7 +25,7 @@ def group_pow_nat {G : Type} [MyGroup G] (g : G) : ℕ → G
 def group_pow {G : Type} [MyGroup G] (g : G) : ℤ → G
 | Int.ofNat n => group_pow_nat g n
 | Int.negSucc n' => MyGroup.inv (group_pow_nat g (n' + 1))
-
+-/
 
 structure Subgroup (G : Type) [MyGroup G] where
   carrier : Set G -- this is a subset of G. (the subgroup)
@@ -48,22 +48,8 @@ def FullSubgroup (G : Type) [MyGroup G] : Subgroup G := {
   inv_mem := by simp
 }
 
-def Subgroup.toType [MyGroup G] (H : Subgroup G) : Type :=
-  { x // x ∈ H.carrier }
+
 /-
-structure SubgroupOfSubgroup {G : Type} [MyGroup G] (H : Subgroup G) extends Subgroup G where
-  h_carrier : carrier ⊆ H.carrier
-
-def SoS_to_S {G : Type} [MyGroup G] (H : Subgroup G) :
-SubgroupOfSubgroup H -> Subgroup G := by {
-  intro h
-  exact h.toSubgroup
-}-/
-
---instance {G : Type} [MyGroup G] : Coe (Subgroup G) (Set G) := {
---  coe := λ h => h.carrier
---}
-
 def SubgroupToGroup {G : Type} [MyGroup G] (H : Subgroup G) : MyGroup H.carrier := {
   mul := by {
     intros a b
@@ -145,7 +131,7 @@ def SubgroupToGroup {G : Type} [MyGroup G] (H : Subgroup G) : MyGroup H.carrier 
     intro
     apply h
   }
-}
+}-/
 
 structure AbelianSubgroup (G : Type) [MyGroup G] extends Subgroup G where
   mul_comm : ∀ a b : carrier, MyGroup.mul (a : G) b = MyGroup.mul (b : G) a
@@ -227,121 +213,3 @@ def same_cardinality {m1 : Type} {m2 : Type}
 
 
 -- Definition 2.1.15 (difficult with cardinality)
-
-
-
--- we want to show, that the set of all left cosets is a group.
--- We define this structs, to make is easier
-
-/-
-structure left_coset' (G : Type) [MyGroup G] (H : Subgroup G) :=
-  g : G
-  carrier : Set G
-  h_carrier : carrier = left_coset G H g
-
-def left_coset_mul {G : Type} [MyGroup G] {H : normal_subgroup G}
-(A B : left_coset' G H) : left_coset' G H := by {
-  obtain ⟨g_a, _⟩ := A
-  obtain ⟨g_b, _⟩ := B
-  exact {
-    g := MyGroup.mul g_a g_b,
-    carrier := left_coset G H (MyGroup.mul g_a g_b),
-    h_carrier := by simp
-  }
-}
-
-def left_coset_one {G : Type} [MyGroup G] {H : normal_subgroup G} :
-left_coset' G H := by {
-  exact {
-    g := MyGroup.one
-    carrier := left_coset G H MyGroup.one
-    h_carrier := by simp
-  }
-}
-
-def left_coset_inv {G : Type} [MyGroup G] {H : normal_subgroup G}
-(A : left_coset' G H) : left_coset' G H := by {
-  obtain ⟨g_a, _⟩ := A
-  exact {
-    g := MyGroup.inv g_a
-    carrier := left_coset G H (MyGroup.inv g_a)
-    h_carrier := by simp
-  }
-}
-
--/
-
-
-
--- Definiere die Quotientengruppe als Typ
-/-
-def quotient_group (G : Type) [group G] (H : subgroup G) : Type :=
-quotient (left_coset_setoid G H)
-
--- Instanz der Gruppe auf der Quotientengruppe
-instance quotient_group_group (G : Type) [group G] (H : normal_subgroup G) : group (quotient_group G H) :=
-{ mul := λ x y, quotient.lift_on₂' x y (λ a b, ⟦a * b⟧)
-    (begin
-      -- Wohldefiniertheit der Multiplikation zeigen
-      intros a₁ a₂ b₁ b₂ ha hb,
-      obtain ⟨h₁, h₁H, ha_eq⟩ := ha,
-      obtain ⟨h₂, h₂H, hb_eq⟩ := hb,
-      apply quotient.sound,
-      use h₁ * h₂,
-      split,
-      { exact H.mul_mem h₁H h₂H },
-      { rw [ha_eq, hb_eq, mul_assoc, mul_assoc, ← mul_assoc b₁, mul_assoc b₁, mul_assoc b₁, mul_assoc, mul_assoc (b₁ * h₁), ← mul_assoc] }
-    end),
-  one := ⟦1⟧,
-  mul_assoc := begin
-    intros x y z,
-    apply quotient.induction_on₃' x y z,
-    intros a b c,
-    apply quotient.sound,
-    use 1,
-    split,
-    { exact H.one_mem },
-    { simp }
-  end,
-  one_mul := begin
-    intro x,
-    apply quotient.induction_on' x,
-    intro a,
-    apply quotient.sound,
-    use 1,
-    split,
-    { exact H.one_mem },
-    { simp }
-  end,
-  mul_one := begin
-    intro x,
-    apply quotient.induction_on' x,
-    intro a,
-    apply quotient.sound,
-    use 1,
-    split,
-    { exact H.one_mem },
-    { simp }
-  end,
-  inv := λ x, quotient.lift_on' x (λ a, ⟦a⁻¹⟧)
-    (begin
-      -- Wohldefiniertheit des Inversen zeigen
-      intros a b h,
-      obtain ⟨h', h'H, ha_eq⟩ := h,
-      apply quotient.sound,
-      use h'⁻¹,
-      split,
-      { exact H.inv_mem h'H },
-      { rw [ha_eq, mul_inv_eq_iff_eq_mul] }
-    end),
-  mul_left_inv := begin
-    intro x,
-    apply quotient.induction_on' x,
-    intro a,
-    apply quotient.sound,
-    use a⁻¹,
-    split,
-    { exact H.inv_mem H.one_mem },
-    { simp }
-  end }
--/

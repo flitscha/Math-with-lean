@@ -42,7 +42,6 @@ Function.Injective (quotient_homomorphism φ).f := by {
 
 
 -- G/ker(φ) is isomorphic to im(φ)
--- also here, the definition of G/H is a problem
 theorem homomorphism_theorem {G1 G2 : Type} [MyGroup G1] [MyGroup G2] (φ : GroupHomomorphism G1 G2) :
 groupsAreIsomorphic (quotient_group G1 (ker_to_normal_subgroup φ)) (image_to_subgroup φ).carrier := by {
   rw [groupsAreIsomorphic]
