@@ -16,16 +16,6 @@ class MyGroup (G : Type) where
 class AbelianGroup (G : Type) extends MyGroup G where
   mul_comm : ∀ a b : G, mul a b = mul b a
 
-/-
-def group_pow_nat {G : Type} [MyGroup G] (g : G) : ℕ → G
-| 0       => MyGroup.one
-| (n + 1) => MyGroup.mul g (group_pow_nat g n)
-
-
-def group_pow {G : Type} [MyGroup G] (g : G) : ℤ → G
-| Int.ofNat n => group_pow_nat g n
-| Int.negSucc n' => MyGroup.inv (group_pow_nat g (n' + 1))
--/
 
 structure Subgroup (G : Type) [MyGroup G] where
   carrier : Set G -- this is a subset of G. (the subgroup)

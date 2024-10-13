@@ -1,4 +1,4 @@
-import Math.Algebra.C2_Groups.C2_1_Basics.quotient_group
+import Math.Algebra.C2_Groups.C2_1_Basics.pow
 
 -- to define the generated subgroups, we use lists of Members of G
 -- such a list, is representing the product of all elements in the list

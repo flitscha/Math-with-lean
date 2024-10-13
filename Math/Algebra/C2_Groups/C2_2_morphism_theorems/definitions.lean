@@ -206,5 +206,6 @@ theorem cyclic_group_carrier_lemma (G : Type) [MyGroup G] (g : G) :
 
       simp [Int.negSucc_eq]
       nth_rewrite 2 [pow_sum_lemma]
+
       rw [pow_neg_one_eq_inv]
 }

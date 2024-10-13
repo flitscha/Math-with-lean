@@ -251,3 +251,15 @@ group_pow g (a + b) = MyGroup.mul (group_pow g a) (group_pow g b) := by {
       repeat rw [MyGroup.mul_assoc]
       rw [pow_comm_lemma]
 }
+
+
+-- g^(-1) = MyGroup.inv g
+theorem pow_neg_one_eq_inv {G : Type} [MyGroup G] (g : G) :
+group_pow g (-1) = MyGroup.inv g := by {
+  simp [group_pow]
+  have : -1 = Int.negSucc 0 := by simp
+  rw [this]
+  simp
+  simp [group_pow_nat]
+  rw [MyGroup.mul_one]
+}
