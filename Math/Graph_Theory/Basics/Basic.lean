@@ -32,3 +32,10 @@ def Path_graph_n (n : ℕ) : Graph (Fin n) := {
   vertices := Set.univ
   edges := λ v w => (w = v % n + 1 ∧ v % n ≠ n-1) ∨ (w = v % n - 1 ∧ v % n ≠ 0)
 }
+
+
+/-
+structure Graph_homomorphism (V1 V2 : Type) [Graph V1] [Graph V2] where
+  f : V1 -> V2
+  mul : ∀ v1 : V1, ∀ v2 : V2, f
+-/
