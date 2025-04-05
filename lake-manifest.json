@@ -71,5 +71,5 @@
    "inputRev": null,
    "inherited": false,
    "configFile": "lakefile.lean"}],
- "name": "test",
+ "name": "math_project",
  "lakeDir": ".lake"}
