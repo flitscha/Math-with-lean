@@ -45,6 +45,8 @@ T = Pi.topologicalSpace := by {
 
   have h_id : @Continuous α α T Pi.topologicalSpace idd := by {
     -- identity map : T -> Product is continuous
+    apply continuous_iff_le_induced.mpr
+    simp [Pi.topologicalSpace]
     sorry
   }
 
@@ -54,7 +56,46 @@ T = Pi.topologicalSpace := by {
   }
 
   have h_hausdorff : @T2Space (∀ i, π i) T := by {
-    sorry
+    apply t2Space_iff_disjoint_nhds.mpr
+    intro x y h_not_eq
+
+    -- da x ≠ y, gibt es eine Komponente i, wo x_i ≠ y_i
+    have h : ∃ i, x i ≠ y i := by {
+      by_contra h
+      push_neg at h
+      have h_eq : x = y := funext h
+      exact h_not_eq h_eq
+    }
+    obtain ⟨i, h⟩ := h
+
+    -- Wir benutzen, dass X_i haussdorff ist. Wir können x_i und y_i trennen
+    obtain ⟨U, V, hUx, hVy, h_disj⟩ := t2_separation h
+
+    -- Jetzt konstruieren wir die offenen Mengen im Produktraum
+    let projection_i : α -> π i := (fun (f : ∀ j, π j) => f i)
+    let U' : Set α := projection_i ⁻¹' U
+    let V' : Set α := projection_i ⁻¹' V
+    have h_prod_open_x : @IsOpen α Pi.topologicalSpace U' := by {
+      sorry
+    }
+    have h_prod_open_y : @IsOpen α Pi.topologicalSpace V' := by {
+      sorry
+    }
+
+    -- Diese mengen beinhalten x und y
+    have h_x_mem : x ∈ U' := by {
+      sorry
+    }
+    have h_y_mem : y ∈ V' := by {
+      sorry
+    }
+
+    -- Und diese Mengen sind disjunkt
+    have h_disj' : Disjoint U' V' := by {
+      sorry
+    }
+
+    -- jetzt können wir schließen, dass U' und V' die punkte x und y trennen.
   }
 
   -- Satz 5.19
