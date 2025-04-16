@@ -1,22 +1,13 @@
 import Mathlib.Topology.Basic
 import Mathlib.Topology.Constructions
 import Mathlib.Topology.CompactOpen
+import Mathlib.Topology.ContinuousFunction.Basic
+import Mathlib.Topology.Homeomorph
 
 open Topology
 
 variable {ι : Type*} {π : ι → Type*}
 variable [∀ i, TopologicalSpace (π i)]
-
-
-
-
-theorem homeomorphism_compact_to_hausdorff {X Y : Type*}
-[TopologicalSpace X] [TopologicalSpace Y] (h_compact: CompactSpace X) (h_hausdorff : T2Space Y)
-(f : X -> Y) (h_cont : Continuous f) (h_bij : Function.Bijective f) :
-∃ g : Y → X, f ∘ g = id ∧ g ∘ f = id ∧ Continuous g := by {
-
-  sorry
-}
 
 
 theorem uniqueness_of_product_topology {I : Type*} {π : I → Type*}
@@ -28,7 +19,7 @@ T = Pi.topologicalSpace := by {
 
   let α := (∀ i, π i)
 
-  -- Hinrichtung: ⊆
+  -- Hinrichtung 💀: ⊆
   have h_hinrichtung : T ≤ Pi.topologicalSpace := by {
     rw [Pi.topologicalSpace] -- gröbste Topologie, wo alle projektionen stetig sind
     apply le_iInf
@@ -92,21 +83,10 @@ T = Pi.topologicalSpace := by {
     exact ⟨h_U'_open, h_V'_open, h_xU, h_yV, h_disj'⟩
   }
 
-  -- Wir verwenden Satz 5.19, um zu zeigen, dass die Identität ein Homöomorphismus ist.
-  have h : ∃ g : α → α, id ∘ g = id ∧ g ∘ id = id ∧ (@Continuous α α Pi.topologicalSpace T g) := by {
-    apply @homeomorphism_compact_to_hausdorff α α T Pi.topologicalSpace
-    exact h_b
-    exact h_hausdorff
-    apply h_id
-    apply Function.bijective_id
-  }
-
-  obtain ⟨g, h1, h2, h⟩ := h
-  have hh : g = id := by {
-    rw [← h1]
-    simp
-  }
-
-  rw [hh] at h
+  -- jetzt können wir Satz 5.19 anwenden.
+  -- dadurch erhalten wir, dass die Identität auch in die andere richtung stetig ist.
+  have h := @Continuous.continuous_symm_of_equiv_compact_to_t2 α α T
+    Pi.topologicalSpace h_b h_hausdorff (Equiv.refl α) h_id
+  simp at h
   apply continuous_id_iff_le.mp h
 }
