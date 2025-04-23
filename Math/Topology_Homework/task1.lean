@@ -6,18 +6,16 @@ import Mathlib.Topology.Homeomorph
 
 open Topology
 
-variable {ι : Type*} {π : ι → Type*}
-variable [∀ i, TopologicalSpace (π i)]
 
-
-theorem uniqueness_of_product_topology {I : Type*} {π : I → Type*}
-[∀ i, TopologicalSpace (π i)] [∀ i, CompactSpace (π i)] [∀ i, T2Space (π i)]
-(T : TopologicalSpace (∀ i, π i))
-(h_a : ∀ j, Continuous (fun (f : ∀ i, π i) => f j))
-(h_b : CompactSpace (∀ i, π i)) :
+theorem uniqueness_of_product_topology {I : Type*} {X : I → Type*}
+[∀ i, TopologicalSpace (X i)] [∀ i, CompactSpace (X i)] [∀ i, T2Space (X i)]
+(T : TopologicalSpace (∀ i, X i))
+(h_a : ∀ j, Continuous (fun (f : ∀ i, X i) => f j))
+(h_b : CompactSpace (∀ i, X i)) :
 T = Pi.topologicalSpace := by {
 
-  let α := (∀ i, π i)
+  let α := (∀ i, X i)
+  let π (i : I) := fun f : α => f i -- die Projektion auf die i-te Komponente
 
   -- Hinrichtung 💀: ⊆
   have h_hinrichtung : T ≤ Pi.topologicalSpace := by {
@@ -58,9 +56,8 @@ T = Pi.topologicalSpace := by {
     obtain ⟨U, V, h_U_open, h_V_open, h_xU, h_yV, h_disj⟩ := t2_separation h
 
     -- Jetzt konstruieren wir die offenen Mengen im Produktraum
-    let projection_i : α -> π i := (fun (f : ∀ j, π j) => f i)
-    let U' : Set α := projection_i ⁻¹' U
-    let V' : Set α := projection_i ⁻¹' V
+    let U' : Set α := (π i)⁻¹' U
+    let V' : Set α := (π i)⁻¹' V
     letI : TopologicalSpace α := Pi.topologicalSpace -- wir arbeiten mit der Produkttopologie
     have h_U'_open : @IsOpen α Pi.topologicalSpace U' := by {
       apply Continuous.isOpen_preimage
