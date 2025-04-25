@@ -9,11 +9,11 @@ open Topology
 /-
 $\textbf{Blatt 4, Aufgabe 5}$
 Es seien $(X_i)_{i \in I}$ kompakte Hausdorff-Räume. Zeigen Sie, dass die Produkttopologie
-die eindeutige Topologie auf $\prod_{i \in I} X_i$ mit den folgenden Eigenschaften:
+die eindeutige Topologie auf $\prod_{i \in I} X_i$ mit den folgenden Eigenschaften ist:
 
-(a) Die Projektionen $\pi_j : \prod_{i \in I} X_i \to X_j$ sind alle stetig.
+  (a) Die Projektionen $\pi_j : \prod_{i \in I} X_i \to X_j$ sind alle stetig.
 
-(b) $\prod_{i \in I} X_i$ ist kompakt.
+  (b) $\prod_{i \in I} X_i$ ist kompakt.
 -/
 theorem uniqueness_of_product_topology {I : Type*} {X : I → Type*}
 [∀ i, TopologicalSpace (X i)] [∀ i, CompactSpace (X i)] [∀ i, T2Space (X i)]
@@ -29,12 +29,12 @@ T = Pi.topologicalSpace := by {
   $\textbf{Beweis:}$
   Wir definieren das kartesische Produkt $\mathcal{X} := \prod_{i \in I} X_i$.
   Sei $\mathcal{T}$ eine Topologie auf $\mathcal{X}$ mit den Eigenschaften (a) und (b).
-  Wir zeigen, dass $\mathcal{T}$ gleich der Produkttopologie ist.
-  Zuerst zeigen wir die Inklusion $\mathcal{T} \subseteq \mathcal{T}_\Pi$.
+  Wir zeigen, dass $\mathcal{T}$ gleich der Produkttopologie $\mathcal{T}_\Pi$ ist.
+  Zuerst zeigen wir: $\mathcal{T}_\Pi \subseteq \mathcal{T}$.
   Die Produkttopologie ist per Definition die gröbste Topologie, sodass alle Projektionen stetig sind.
-  Da nach Voraussetzung jede Projektion $\pi_j$ bezüglich $\mathcal{T}$ stetig ist, folgt: $\mathcal{T} \subseteq \mathcal{T}_\Pi$.
+  Da nach Voraussetzung jede Projektion $\pi_j$ bezüglich $\mathcal{T}$ stetig ist, folgt: $\mathcal{T}_\Pi \subseteq \mathcal{T}$.
   -/
-  have h_hinrichtung : T ≤ Pi.topologicalSpace := by {
+  have h_hinrichtung : T ≤ Pi.topologicalSpace := by { -- Achtung, komische notation in lean: ≤
     rw [Pi.topologicalSpace] -- gröbste Topologie, wo alle projektionen stetig sind
     apply le_iInf
     intro i
@@ -47,14 +47,14 @@ T = Pi.topologicalSpace := by {
 
 
   /-
-  Für die Rückrichtung zeigen wir: $\mathcal{T}_\Pi \subseteq \mathcal{T}$.
+  Nun zeigen wir die umgekehrte Inklusion: $\mathcal{T} \subseteq \mathcal{T}_\Pi$.
   Dazu zeigen wir, dass die Identitätsabbildung $\mathrm{id} : (\mathcal{X}, \mathcal{T}_\Pi) \to (\mathcal{X}, \mathcal{T})$ stetig ist.
   -/
   let idd : Xₚ -> Xₚ := @id Xₚ
 
   /-
-  Da $\mathcal{T} \subseteq \mathcal{T}_\Pi$, ist die Identität in die andere Richtung stetig,
-  also $\mathrm{id} : (\mathcal{X}, \mathcal{T}) \to (\mathcal{X}, \mathcal{T}_\Pi)$.
+  Da $\mathcal{T}_\Pi \subseteq \mathcal{T}$, ist die Identität in die andere Richtung stetig, also
+  $\mathrm{id} : (\mathcal{X}, \mathcal{T}) \to (\mathcal{X}, \mathcal{T}_\Pi)$.
   -/
   have h_id : @Continuous Xₚ Xₚ T Pi.topologicalSpace idd := by {
     apply continuous_id_iff_le.mpr h_hinrichtung
@@ -81,13 +81,13 @@ T = Pi.topologicalSpace := by {
 
     /-
     Da $X_i$ ein Hausdorffraum ist, gibt es disjunkte offene Mengen $U, V \subseteq X_i$,
-    sodass $x_i \in U$, $y_i \in V$ und $U \cap V = \emptyset$.
+    mit $x_i \in U$, $y_i \in V$ und $U \cap V = \emptyset$.
     -/
     obtain ⟨U, V, h_U_open, h_V_open, h_xU, h_yV, h_disj⟩ := t2_separation h
 
     /-
-    Dann sind $U' := \pi_i^{-1}(U)$ und $V' := \pi_i^{-1}(V)$ offene Mengen in der Produkttopologie,
-    die $x$ und $y$ enthalten, und disjunkt sind.
+    Dann sind $\pi_i^{-1}(U)$ und $\pi_i^{-1}(V)$ offene Mengen in der Produkttopologie,
+    die $x$ bzw. $y$ enthalten und disjunkt sind.
     -/
     let U' : Set Xₚ := (π i)⁻¹' U
     let V' : Set Xₚ := (π i)⁻¹' V
@@ -108,19 +108,18 @@ T = Pi.topologicalSpace := by {
     }
 
     /-
-    Damit haben wir gezeigt, dass die Produkttopologie ein Hausdorffraum ist.
+    Damit haben wir gezeigt, dass $(\mathcal{X}, \mathcal{T}_\Pi)$ ein Hausdorffraum ist.
     -/
     use U', V'
     exact ⟨h_U'_open, h_V'_open, h_xU, h_yV, h_disj'⟩
   }
 
   /-
-  Jetzt wenden wir Satz 5.19 an. Er besagt, dass eine stetige, bijektive Abbildung
-  zwischen einem kompaktem Raum und einem Hausdorffraum ein Homöomorphismus ist.
+  Jetzt wenden wir Satz 5.19 an, der besagt, dass eine stetige, bijektive Abbildung zwischen einem kompakten Raum und einem Hausdorffraum ein Homöomorphismus ist.
 
-  Wir wenden den Satz auf die Identitätsabbildung $\mathrm{id} : (\mathcal{X}, \mathcal{T}_\Pi) \to (\mathcal{X}, \mathcal{T})$ an.
-  Somit ist auch die Identität in die andere Richtung stetig.
-  Daraus folgt: $\mathcal{T}_\Pi \subseteq \mathcal{T}$.
+  In unserem Fall ist die Identitätsabbildung zwischen den Räumen $(\mathcal{X}, \mathcal{T})$ und $(\mathcal{X}, \mathcal{T}_\Pi)$ bijektiv und stetig.
+  Da $(\mathcal{X}, \mathcal{T})$ nach Bedingung (b) kompakt ist, und $(\mathcal{X}, \mathcal{T}_\Pi)$ ein Hausdorffraum ist, folgt mit Satz 5.19, dass die Identität ein Homöomorphismus ist.
+  Damit ist die Identität in beide Richtungen stetig und die Richtung $\mathcal{T} \subseteq \mathcal{T}_\Pi$ ist gezeigt.
   -/
   have h := @Continuous.continuous_symm_of_equiv_compact_to_t2 Xₚ Xₚ T
     Pi.topologicalSpace h_b h_hausdorff (Equiv.refl Xₚ) h_id
